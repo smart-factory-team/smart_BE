@@ -16,9 +16,9 @@ spec:
     spec:
       containers:
         - name: gateway
-          image: "23acr.azurecr.io/gateway:latest"
+          image: "23acr.azurecr.io/gateway:java21"  # 새 태그로 변경
           ports:
-            - containerPort: 8088  # 8080 → 8088로 변경
+            - containerPort: 8088  # 그대로 유지
           env:
             - name: SPRING_PROFILES_ACTIVE
               value: "kubernetes"
@@ -32,12 +32,12 @@ spec:
           livenessProbe:
             httpGet:
               path: /actuator/health
-              port: 8088  # 8080 → 8088로 변경
+              port: 8088  # 그대로 유지
             initialDelaySeconds: 60
             periodSeconds: 30
           readinessProbe:
             httpGet:
               path: /actuator/health
-              port: 8088  # 8080 → 8088로 변경
+              port: 8088  # 그대로 유지
             initialDelaySeconds: 30
             periodSeconds: 10
