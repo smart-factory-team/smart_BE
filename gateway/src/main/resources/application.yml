@@ -5,7 +5,9 @@ server:
 ---
 
 spring:
-  profiles: default
+  config:
+    activate:
+      on-profile: default
   cloud:
     gateway:
       routes:
@@ -56,7 +58,9 @@ spring:
 ---
 
 spring:
-  profiles: docker
+  config:
+    activate:
+      on-profile: docker
   cloud:
     gateway:
       routes:
@@ -107,7 +111,9 @@ spring:
 ---
 
 spring:
-  profiles: kubernetes
+  config:
+    activate:
+      on-profile: kubernetes
   cloud:
     gateway:
       httpclient:
