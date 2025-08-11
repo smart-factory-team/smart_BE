@@ -203,6 +203,46 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  name: paintingprocessmonitoring
+  labels:
+    app: paintingprocessmonitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: paintingprocessmonitoring
+  template:
+    metadata:
+      labels:
+        app: paintingprocessmonitoring
+    spec:
+      containers:
+        - name: paintingprocessmonitoring
+          image: username/paintingprocessmonitoring:latest
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: '/actuator/health'
+              port: 8080
+            initialDelaySeconds: 10
+            timeoutSeconds: 2
+            periodSeconds: 5
+            failureThreshold: 10
+          livenessProbe:
+            httpGet:
+              path: '/actuator/health'
+              port: 8080
+            initialDelaySeconds: 120
+            timeoutSeconds: 2
+            periodSeconds: 5
+            failureThreshold: 5
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
   name: assemblyprocessmonitoring
   labels:
     app: assemblyprocessmonitoring
@@ -362,6 +402,23 @@ spec:
       targetPort: 8080
   selector:
     app: chatbot
+
+
+---
+
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: paintingprocessmonitoring
+  labels:
+    app: paintingprocessmonitoring
+spec:
+  ports:
+    - port: 8080
+      targetPort: 8080
+  selector:
+    app: paintingprocessmonitoring
 
 
 ---
