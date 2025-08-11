@@ -1,6 +1,6 @@
 server:
   port: 8088
-  forward-headers-strategy: framework   # X-Forwarded-* 헤더 신뢰(게이트웨이 뒤 Swagger 경로 계산 안정화)
+  forward-headers-strategy: framework
 
 ---
 
@@ -136,21 +136,19 @@ spring:
           predicates:
             - Path=/weldingMachineDefectDetectionLogs/**
 
-        # ===== FastAPI Model/Simulator Services =====
-        # Welding - Model Serving (FastAPI listens on container 8000, K8s Service exposes 80)
+        # ===== FastAPI AI Services (CI/CD 배포명과 일치) =====
+        # Welding - Model Serving
         - id: welding-defect-detection-api
-          uri: http://sf-welding-machine-defect-detection-model-service:80
+          uri: http://sf-welding-machine-defect-detection-model-service.sf-welding-machine-defect-detection-model-service.svc.cluster.local:80
           predicates:
-            - Path=/api/v1/welding/defect, /api/v1/welding/defect/**   # docs 포함
+            - Path=/api/v1/welding/defect, /api/v1/welding/defect/**
           filters:
-            # /api/v1/welding/defect -> /
             - RewritePath=/api/v1/welding/defect$, /
-            # /api/v1/welding/defect/... -> /...
             - RewritePath=/api/v1/welding/defect/(?<segment>.*), /${segment}
 
         # Welding - Data Simulator
         - id: welding-data-simulator-api
-          uri: http://sf-welding-machine-data-simulator-service:80
+          uri: http://sf-welding-machine-data-simulator-service.sf-welding-machine-data-simulator-service.svc.cluster.local:80
           predicates:
             - Path=/api/v1/welding/simulator, /api/v1/welding/simulator/**
           filters:
@@ -159,7 +157,7 @@ spring:
 
         # Painting - Process Defect
         - id: painting-process-defect-api
-          uri: http://sf-painting-process-equipment-defect-detection-model-service:80
+          uri: http://sf-painting-process-equipment-defect-detection-model-service.sf-painting-process-equipment-defect-detection-model-service.svc.cluster.local:80
           predicates:
             - Path=/api/v1/painting/process/defect, /api/v1/painting/process/defect/**
           filters:
@@ -168,7 +166,7 @@ spring:
 
         # Painting - Surface Defect
         - id: painting-surface-defect-api
-          uri: http://sf-painting-surface-defect-detection-model-service:80
+          uri: http://sf-painting-surface-defect-detection-model-service.sf-painting-surface-defect-detection-model-service.svc.cluster.local:80
           predicates:
             - Path=/api/v1/painting/surface/defect, /api/v1/painting/surface/defect/**
           filters:
@@ -177,7 +175,7 @@ spring:
 
         # Press - Defect
         - id: press-defect-detection-api
-          uri: http://sf-press-defect-detection-model-service:80
+          uri: http://sf-press-defect-detection-model-service.sf-press-defect-detection-model-service.svc.cluster.local:80
           predicates:
             - Path=/api/v1/press/defect, /api/v1/press/defect/**
           filters:
@@ -186,7 +184,7 @@ spring:
 
         # Press - Fault
         - id: press-fault-detection-api
-          uri: http://sf-press-fault-detection-model-service:80
+          uri: http://sf-press-fault-detection-model-service.sf-press-fault-detection-model-service.svc.cluster.local:80
           predicates:
             - Path=/api/v1/press/fault, /api/v1/press/fault/**
           filters:
@@ -195,7 +193,7 @@ spring:
 
         # Vehicle Assembly
         - id: vehicle-assembly-defect-api
-          uri: http://sf-vehicle-assembly-process-defect-detection-model-service:80
+          uri: http://sf-vehicle-assembly-process-defect-detection-model-service.sf-vehicle-assembly-process-defect-detection-model-service.svc.cluster.local:80
           predicates:
             - Path=/api/v1/vehicle/assembly/defect, /api/v1/vehicle/assembly/defect/**
           filters:
@@ -204,7 +202,7 @@ spring:
 
         # ===== Data Simulators =====
         - id: painting-process-simulator-api
-          uri: http://sf-painting-process-data-simulator-service:80
+          uri: http://sf-painting-process-data-simulator-service.sf-painting-process-data-simulator-service.svc.cluster.local:80
           predicates:
             - Path=/api/v1/painting/process/simulator, /api/v1/painting/process/simulator/**
           filters:
@@ -212,7 +210,7 @@ spring:
             - RewritePath=/api/v1/painting/process/simulator/(?<segment>.*), /${segment}
 
         - id: painting-surface-simulator-api
-          uri: http://sf-painting-surface-data-simulator-service:80
+          uri: http://sf-painting-surface-data-simulator-service.sf-painting-surface-data-simulator-service.svc.cluster.local:80
           predicates:
             - Path=/api/v1/painting/surface/simulator, /api/v1/painting/surface/simulator/**
           filters:
@@ -220,7 +218,7 @@ spring:
             - RewritePath=/api/v1/painting/surface/simulator/(?<segment>.*), /${segment}
 
         - id: press-defect-simulator-api
-          uri: http://sf-press-defect-data-simulator-service:80
+          uri: http://sf-press-defect-data-simulator-service.sf-press-defect-data-simulator-service.svc.cluster.local:80
           predicates:
             - Path=/api/v1/press/defect/simulator, /api/v1/press/defect/simulator/**
           filters:
@@ -228,7 +226,7 @@ spring:
             - RewritePath=/api/v1/press/defect/simulator/(?<segment>.*), /${segment}
 
         - id: press-fault-simulator-api
-          uri: http://sf-press-fault-data-simulator-service:80
+          uri: http://sf-press-fault-data-simulator-service.sf-press-fault-data-simulator-service.svc.cluster.local:80
           predicates:
             - Path=/api/v1/press/fault/simulator, /api/v1/press/fault/simulator/**
           filters:
@@ -236,7 +234,7 @@ spring:
             - RewritePath=/api/v1/press/fault/simulator/(?<segment>.*), /${segment}
 
         - id: vehicle-assembly-simulator-api
-          uri: http://sf-vehicle-assembly-data-simulator-service:80
+          uri: http://sf-vehicle-assembly-data-simulator-service.sf-vehicle-assembly-data-simulator-service.svc.cluster.local:80
           predicates:
             - Path=/api/v1/vehicle/assembly/simulator, /api/v1/vehicle/assembly/simulator/**
           filters:
