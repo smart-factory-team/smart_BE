@@ -18,10 +18,10 @@ spec:
         - name: gateway
           image: "23acr.azurecr.io/gateway:latest"
           ports:
-            - containerPort: 8080
+            - containerPort: 8088  # 8080 → 8088로 변경
           env:
             - name: SPRING_PROFILES_ACTIVE
-              value: "kubernetes"  # kubernetes 프로파일 활성화
+              value: "kubernetes"
           resources:
             requests:
               memory: "512Mi"
@@ -32,13 +32,13 @@ spec:
           livenessProbe:
             httpGet:
               path: /actuator/health
-              port: 8080
+              port: 8088  # 8080 → 8088로 변경
             initialDelaySeconds: 60
             periodSeconds: 30
           readinessProbe:
             httpGet:
               path: /actuator/health
-              port: 8080
+              port: 8088  # 8080 → 8088로 변경
             initialDelaySeconds: 30
             periodSeconds: 10
 
@@ -50,10 +50,10 @@ metadata:
   labels:
     app: gateway
 spec:
-  type: LoadBalancer  # 외부 접근을 위해 LoadBalancer 타입
+  type: LoadBalancer
   ports:
-    - port: 8088      # 외부 포트
-      targetPort: 8080 # 컨테이너 포트
+    - port: 8088
+      targetPort: 8088  # 8080 → 8088로 변경
       protocol: TCP
       name: http
   selector:
