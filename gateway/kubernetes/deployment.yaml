@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: gateway
-          image: "23acr.azurecr.io/gateway:java21"  # 새 태그로 변경
+          image: "23acr.azurecr.io/gateway:java17"  # java21 → java17로 변경
           ports:
             - containerPort: 8088  # 그대로 유지
           env:
