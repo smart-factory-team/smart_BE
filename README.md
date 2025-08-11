@@ -25,6 +25,7 @@ See the README.md files inside the each microservices directory:
 - approvalmanagement
 - pressfaultdetection
 - chatbot
+- paintingprocessmonitoring
 - assemblyprocessmonitoring
 - weldingprocessmonitoring
 
@@ -60,6 +61,11 @@ mvn spring-boot:run
 ```
  http :8088/agentSessions chatbotSessionId="chatbotSessionId"issue="issue"userId="userId"startedAt="startedAt"endedAt="endedAt"isReported="isReported"isTerminated="isTerminated"
  http :8088/issues issue="issue"modelLogId="modelLogId"
+```
+- paintingprocessmonitoring
+```
+ http :8088/paintingSurfaceDefectDetectionLogs id="id"machineId="machineId"timeStamp="timeStamp"machineName="machineName"itemNo="itemNo"pressTime="pressTime"pressure1="pressure1"pressure2="pressure2"pressure3="pressure3"defectCluster="defectCluster"defectType="defectType"issue="issue"isSolved="isSolved"
+ http :8088/paintingProcessEquipmentDefectDetectionLogs id="id"machineId="machineId"timeStamp="timeStamp"thick="thick"voltage="voltage"ampere="ampere"temper="temper"issue="issue"isSolved="isSolved"
 ```
 - assemblyprocessmonitoring
 ```

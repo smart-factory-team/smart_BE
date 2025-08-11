@@ -34,6 +34,7 @@ jobs:
           mvn clean package -f ./approvalmanagement/pom.xml
           mvn clean package -f ./pressfaultdetection/pom.xml
           mvn clean package -f ./chatbot/pom.xml
+          mvn clean package -f ./paintingprocessmonitoring/pom.xml
           mvn clean package -f ./assemblyprocessmonitoring/pom.xml
           mvn clean package -f ./weldingprocessmonitoring/pom.xml
 
@@ -86,6 +87,16 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository }}/chatbot:latest
             ghcr.io/${{ github.repository }}/chatbot:${{ github.ref_name }}
+            
+      - name: Docker Build and push for Paintingprocessmonitoring
+        uses: docker/build-push-action@v4
+        with:
+          context: ./paintingprocessmonitoring
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}/paintingprocessmonitoring:latest
+            ghcr.io/${{ github.repository }}/paintingprocessmonitoring:${{ github.ref_name }}
             
       - name: Docker Build and push for Assemblyprocessmonitoring
         uses: docker/build-push-action@v4
