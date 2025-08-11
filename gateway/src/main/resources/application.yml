@@ -1,5 +1,6 @@
 server:
   port: 8088
+  forward-headers-strategy: framework   # X-Forwarded-* 헤더 신뢰(게이트웨이 뒤 Swagger 경로 계산 안정화)
 
 ---
 
@@ -7,12 +8,11 @@ spring:
   profiles: default
   cloud:
     gateway:
-#<<< API Gateway / Routes
       routes:
         - id: usermanagement
           uri: http://localhost:8082
           predicates:
-            - Path=/userRegisterations/**, /users/**, 
+            - Path=/userRegisterations/**, /users/**
         - id: report
           uri: http://localhost:8083
           predicates:
@@ -20,39 +20,34 @@ spring:
         - id: approvalmanagement
           uri: http://localhost:8084
           predicates:
-            - Path=/userApprovals/**, 
+            - Path=/userApprovals/**
         - id: pressfaultdetection
           uri: http://localhost:8085
           predicates:
-            - Path=/pressDefectDetectionLogs/**, /pressFaultDetectionLogs/**, 
+            - Path=/pressDefectDetectionLogs/**, /pressFaultDetectionLogs/**
         - id: chatbot
           uri: http://localhost:8086
           predicates:
-            - Path=/agentSessions/**, /issues/**, 
+            - Path=/agentSessions/**, /issues/**
         - id: assemblyprocessmonitoring
           uri: http://localhost:8087
           predicates:
-            - Path=/vehicleAssemblyProcessDefectDetectionLogs/**, 
+            - Path=/vehicleAssemblyProcessDefectDetectionLogs/**
         - id: weldingprocessmonitoring
-          uri: http://localhost:8088
+          uri: http://localhost:8089
           predicates:
-            - Path=/weldingMachineDefectDetectionLogs/**, 
+            - Path=/weldingMachineDefectDetectionLogs/**
         - id: frontend
           uri: http://localhost:8080
           predicates:
             - Path=/**
-#>>> API Gateway / Routes
       globalcors:
         corsConfigurations:
           '[/**]':
-            allowedOrigins:
-              - "*"
-            allowedMethods:
-              - "*"
-            allowedHeaders:
-              - "*"
-            allowCredentials: true
-
+            allowedOrigins: ["*"]
+            allowedMethods: ["*"]
+            allowedHeaders: ["*"]
+            allowCredentials: false
 
 ---
 
@@ -64,31 +59,31 @@ spring:
         - id: usermanagement
           uri: http://usermanagement:8080
           predicates:
-            - Path=/userRegisterations/**, /users/**, 
+            - Path=/userRegisterations/**, /users/**
         - id: report
           uri: http://report:8080
           predicates:
-            - Path=/posts/**, /comments/**, /reports/**, 
+            - Path=/posts/**, /comments/**, /reports/**
         - id: approvalmanagement
           uri: http://approvalmanagement:8080
           predicates:
-            - Path=/userApprovals/**, 
+            - Path=/userApprovals/**
         - id: pressfaultdetection
           uri: http://pressfaultdetection:8080
           predicates:
-            - Path=/pressDefectDetectionLogs/**, /pressFaultDetectionLogs/**, 
+            - Path=/pressDefectDetectionLogs/**, /pressFaultDetectionLogs/**
         - id: chatbot
           uri: http://chatbot:8080
           predicates:
-            - Path=/agentSessions/**, /issues/**, 
+            - Path=/agentSessions/**, /issues/**
         - id: assemblyprocessmonitoring
           uri: http://assemblyprocessmonitoring:8080
           predicates:
-            - Path=/vehicleAssemblyProcessDefectDetectionLogs/**, 
+            - Path=/vehicleAssemblyProcessDefectDetectionLogs/**
         - id: weldingprocessmonitoring
           uri: http://weldingprocessmonitoring:8080
           predicates:
-            - Path=/weldingMachineDefectDetectionLogs/**, 
+            - Path=/weldingMachineDefectDetectionLogs/**
         - id: frontend
           uri: http://frontend:8080
           predicates:
@@ -96,13 +91,167 @@ spring:
       globalcors:
         corsConfigurations:
           '[/**]':
-            allowedOrigins:
-              - "*"
-            allowedMethods:
-              - "*"
-            allowedHeaders:
-              - "*"
-            allowCredentials: true
+            allowedOrigins: ["*"]
+            allowedMethods: ["*"]
+            allowedHeaders: ["*"]
+            allowCredentials: false
 
-server:
-  port: 8080
+---
+
+spring:
+  profiles: kubernetes
+  cloud:
+    gateway:
+      httpclient:
+        connect-timeout: 5000
+        response-timeout: 30s
+      routes:
+        # ===== Spring Boot Microservices =====
+        - id: usermanagement
+          uri: http://usermanagement:8080
+          predicates:
+            - Path=/userRegisterations/**, /users/**
+        - id: report
+          uri: http://report:8080
+          predicates:
+            - Path=/posts/**, /comments/**, /reports/**
+        - id: approvalmanagement
+          uri: http://approvalmanagement:8080
+          predicates:
+            - Path=/userApprovals/**
+        - id: pressfaultdetection
+          uri: http://pressfaultdetection:8080
+          predicates:
+            - Path=/pressDefectDetectionLogs/**, /pressFaultDetectionLogs/**
+        - id: chatbot
+          uri: http://chatbot:8080
+          predicates:
+            - Path=/agentSessions/**, /issues/**
+        - id: assemblyprocessmonitoring
+          uri: http://assemblyprocessmonitoring:8080
+          predicates:
+            - Path=/vehicleAssemblyProcessDefectDetectionLogs/**
+        - id: weldingprocessmonitoring
+          uri: http://weldingprocessmonitoring:8080
+          predicates:
+            - Path=/weldingMachineDefectDetectionLogs/**
+
+        # ===== FastAPI Model/Simulator Services =====
+        # Welding - Model Serving (FastAPI listens on container 8000, K8s Service exposes 80)
+        - id: welding-defect-detection-api
+          uri: http://sf-welding-machine-defect-detection-model-service:80
+          predicates:
+            - Path=/api/v1/welding/defect, /api/v1/welding/defect/**   # docs 포함
+          filters:
+            # /api/v1/welding/defect -> /
+            - RewritePath=/api/v1/welding/defect$, /
+            # /api/v1/welding/defect/... -> /...
+            - RewritePath=/api/v1/welding/defect/(?<segment>.*), /${segment}
+
+        # Welding - Data Simulator
+        - id: welding-data-simulator-api
+          uri: http://sf-welding-machine-data-simulator-service:80
+          predicates:
+            - Path=/api/v1/welding/simulator, /api/v1/welding/simulator/**
+          filters:
+            - RewritePath=/api/v1/welding/simulator$, /
+            - RewritePath=/api/v1/welding/simulator/(?<segment>.*), /${segment}
+
+        # Painting - Process Defect
+        - id: painting-process-defect-api
+          uri: http://sf-painting-process-equipment-defect-detection-model-service:80
+          predicates:
+            - Path=/api/v1/painting/process/defect, /api/v1/painting/process/defect/**
+          filters:
+            - RewritePath=/api/v1/painting/process/defect$, /
+            - RewritePath=/api/v1/painting/process/defect/(?<segment>.*), /${segment}
+
+        # Painting - Surface Defect
+        - id: painting-surface-defect-api
+          uri: http://sf-painting-surface-defect-detection-model-service:80
+          predicates:
+            - Path=/api/v1/painting/surface/defect, /api/v1/painting/surface/defect/**
+          filters:
+            - RewritePath=/api/v1/painting/surface/defect$, /
+            - RewritePath=/api/v1/painting/surface/defect/(?<segment>.*), /${segment}
+
+        # Press - Defect
+        - id: press-defect-detection-api
+          uri: http://sf-press-defect-detection-model-service:80
+          predicates:
+            - Path=/api/v1/press/defect, /api/v1/press/defect/**
+          filters:
+            - RewritePath=/api/v1/press/defect$, /
+            - RewritePath=/api/v1/press/defect/(?<segment>.*), /${segment}
+
+        # Press - Fault
+        - id: press-fault-detection-api
+          uri: http://sf-press-fault-detection-model-service:80
+          predicates:
+            - Path=/api/v1/press/fault, /api/v1/press/fault/**
+          filters:
+            - RewritePath=/api/v1/press/fault$, /
+            - RewritePath=/api/v1/press/fault/(?<segment>.*), /${segment}
+
+        # Vehicle Assembly
+        - id: vehicle-assembly-defect-api
+          uri: http://sf-vehicle-assembly-process-defect-detection-model-service:80
+          predicates:
+            - Path=/api/v1/vehicle/assembly/defect, /api/v1/vehicle/assembly/defect/**
+          filters:
+            - RewritePath=/api/v1/vehicle/assembly/defect$, /
+            - RewritePath=/api/v1/vehicle/assembly/defect/(?<segment>.*), /${segment}
+
+        # ===== Data Simulators =====
+        - id: painting-process-simulator-api
+          uri: http://sf-painting-process-data-simulator-service:80
+          predicates:
+            - Path=/api/v1/painting/process/simulator, /api/v1/painting/process/simulator/**
+          filters:
+            - RewritePath=/api/v1/painting/process/simulator$, /
+            - RewritePath=/api/v1/painting/process/simulator/(?<segment>.*), /${segment}
+
+        - id: painting-surface-simulator-api
+          uri: http://sf-painting-surface-data-simulator-service:80
+          predicates:
+            - Path=/api/v1/painting/surface/simulator, /api/v1/painting/surface/simulator/**
+          filters:
+            - RewritePath=/api/v1/painting/surface/simulator$, /
+            - RewritePath=/api/v1/painting/surface/simulator/(?<segment>.*), /${segment}
+
+        - id: press-defect-simulator-api
+          uri: http://sf-press-defect-data-simulator-service:80
+          predicates:
+            - Path=/api/v1/press/defect/simulator, /api/v1/press/defect/simulator/**
+          filters:
+            - RewritePath=/api/v1/press/defect/simulator$, /
+            - RewritePath=/api/v1/press/defect/simulator/(?<segment>.*), /${segment}
+
+        - id: press-fault-simulator-api
+          uri: http://sf-press-fault-data-simulator-service:80
+          predicates:
+            - Path=/api/v1/press/fault/simulator, /api/v1/press/fault/simulator/**
+          filters:
+            - RewritePath=/api/v1/press/fault/simulator$, /
+            - RewritePath=/api/v1/press/fault/simulator/(?<segment>.*), /${segment}
+
+        - id: vehicle-assembly-simulator-api
+          uri: http://sf-vehicle-assembly-data-simulator-service:80
+          predicates:
+            - Path=/api/v1/vehicle/assembly/simulator, /api/v1/vehicle/assembly/simulator/**
+          filters:
+            - RewritePath=/api/v1/vehicle/assembly/simulator$, /
+            - RewritePath=/api/v1/vehicle/assembly/simulator/(?<segment>.*), /${segment}
+
+        # ===== Frontend (catch-all) =====
+        - id: frontend
+          uri: http://frontend:8080
+          predicates:
+            - Path=/**
+      globalcors:
+        corsConfigurations:
+          '[/**]':
+            allowedOrigins: ["*"]
+            allowedMethods: ["*"]
+            allowedHeaders: ["*"]
+            allowCredentials: false
