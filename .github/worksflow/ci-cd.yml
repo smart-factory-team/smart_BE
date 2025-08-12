@@ -1,0 +1,684 @@
+name: Smart BE Spring Boot MSA CI/CD Pipeline
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'usermanagement/**'
+      - 'report/**'
+      - 'approvalmanagement/**'
+      - 'pressfaultdetection/**'
+      - 'chatbot/**'
+      - 'assemblyprocessmonitoring/**'
+      - 'weldingprocessmonitoring/**'
+      - 'gateway/**'
+  push:
+    branches: [ main ]
+    paths:
+      - 'usermanagement/**'
+      - 'report/**'
+      - 'approvalmanagement/**'
+      - 'pressfaultdetection/**'
+      - 'chatbot/**'
+      - 'assemblyprocessmonitoring/**'
+      - 'weldingprocessmonitoring/**'
+      - 'gateway/**'
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+  actions: read
+  packages: write
+  id-token: write
+
+env:
+  REGISTRY: 23acr.azurecr.io
+  AKS_CLUSTER_NAME: 23-aks
+  AKS_RESOURCE_GROUP: 23-rsrc
+  JAVA_VERSION: '17'
+  MAVEN_OPTS: '-Xmx1024m -XX:MaxPermSize=256m'
+
+jobs:
+  # 변경된 Spring Boot 서비스 감지
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      services: ${{ steps.changes.outputs.services }}
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+      detection_method: ${{ steps.changes.outputs.detection_method }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed Spring Boot services
+        id: changes
+        run: |
+          CHANGED_SERVICES=""
+          DETECTION_METHOD=""
+          
+          # Spring Boot 서비스 목록 정의
+          SPRING_SERVICES=("usermanagement" "report" "approvalmanagement" "pressfaultdetection" "chatbot" "assemblyprocessmonitoring" "weldingprocessmonitoring" "gateway")
+          
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            # PR 제목에서 서비스명 추출
+            PR_TITLE="${{ github.event.pull_request.title }}"
+            SERVICE_NAME=$(echo "$PR_TITLE" | sed -n 's/^[^/]*\/[0-9]\+\/\([^:]*\):.*/\1/p' | sed 's/[[:space:]]*$//' | tr -cd '[:alnum:]-')
+          
+            echo "🔍 PR Title: $PR_TITLE"
+            echo "🔍 Parsed Service: '$SERVICE_NAME'"
+          
+            # 서비스 디렉토리 확인 (Spring Boot 서비스만)
+            for svc in "${SPRING_SERVICES[@]}"; do
+              if [ "$SERVICE_NAME" = "$svc" ] && [ -d "$svc" ]; then
+                echo "✅ Spring Boot service found: $svc"
+                CHANGED_SERVICES="$svc"
+                DETECTION_METHOD="pr_title"
+                break
+              fi
+            done
+          fi
+          
+          # PR 제목에서 감지 실패하거나 Push 이벤트인 경우 git diff 사용
+          if [ -z "$CHANGED_SERVICES" ]; then
+            echo "🔍 Using git diff to detect Spring Boot service changes..."
+            if [ "${{ github.event_name }}" == "pull_request" ]; then
+              BASE_SHA="${{ github.event.pull_request.base.sha }}"
+              HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+            else
+              BASE_SHA="${{ github.event.before }}"
+              HEAD_SHA="${{ github.sha }}"
+            fi
+          
+            # 변경된 Spring Boot 서비스만 필터링
+            ALL_CHANGED=$(git diff --name-only $BASE_SHA $HEAD_SHA | cut -d'/' -f1 | sort -u)
+          
+            for changed_dir in $ALL_CHANGED; do
+              for svc in "${SPRING_SERVICES[@]}"; do
+                if [ "$changed_dir" = "$svc" ]; then
+                  CHANGED_SERVICES="$CHANGED_SERVICES $svc"
+                fi
+              done
+            done
+          
+            CHANGED_SERVICES=$(echo $CHANGED_SERVICES | tr ' ' '\n' | sort -u | tr '\n' ' ' | sed 's/ $//')
+            DETECTION_METHOD="git_diff"
+          
+            if [ -z "$CHANGED_SERVICES" ]; then
+              echo "📭 No Spring Boot services changed"
+            else
+              echo "📦 Spring Boot services changed: $CHANGED_SERVICES"
+            fi
+          fi
+          
+          echo "services=$CHANGED_SERVICES" >> $GITHUB_OUTPUT
+          echo "detection_method=$DETECTION_METHOD" >> $GITHUB_OUTPUT
+
+      - name: Set matrix for changed services
+        id: set-matrix
+        run: |
+          SERVICES="${{ steps.changes.outputs.services }}"
+          if [ -z "$SERVICES" ]; then
+            echo "matrix=[]" >> $GITHUB_OUTPUT
+          else
+            # JSON 배열 형태로 변환
+            MATRIX_JSON=$(echo $SERVICES | tr ' ' '\n' | jq -R . | jq -s -c .)
+            echo "matrix=$MATRIX_JSON" >> $GITHUB_OUTPUT
+          fi
+          
+          echo "🎯 Final matrix: $MATRIX_JSON"
+
+  # 각 Spring Boot 서비스별 테스트 및 빌드
+  test-and-build:
+    needs: detect-changes
+    if: github.event_name == 'pull_request' && needs.detect-changes.outputs.services != ''
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+
+      - name: Cache Maven dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2
+          key: "${{ runner.os }}-m2-${{ hashFiles('**\/pom.xml') }}"
+          restore-keys: ${{ runner.os }}-m2
+
+      - name: Check if service directory exists
+        id: check-service
+        run: |
+          if [ -d "${{ matrix.service }}" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "✅ Service directory found: ${{ matrix.service }}"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "⚠️ Service directory ${{ matrix.service }} does not exist"
+          fi
+
+      - name: Run Maven tests - ${{ matrix.service }}
+        id: test
+        if: steps.check-service.outputs.exists == 'true'
+        working-directory: ${{ matrix.service }}
+        run: |
+          echo "🧪 Running tests for ${{ matrix.service }}..."
+          
+          # Maven 테스트 실행
+          mvn clean test -B -Dspring.profiles.active=test \
+            -Dmaven.test.failure.ignore=true \
+            -Dsurefire.useFile=false \
+            -Dspring.datasource.url=jdbc:h2:mem:testdb \
+            -Dspring.datasource.driver-class-name=org.h2.Driver \
+            -Dspring.jpa.hibernate.ddl-auto=create-drop
+          
+          # 테스트 결과 파싱
+          if [ -f target/surefire-reports/TEST-*.xml ]; then
+            TOTAL=$(find target/surefire-reports -name "TEST-*.xml" -exec grep -h 'tests="[^"]*"' {} \; | grep -o '[0-9]*' | awk '{s+=$1} END {print s}' || echo "0")
+            FAILURES=$(find target/surefire-reports -name "TEST-*.xml" -exec grep -h 'failures="[^"]*"' {} \; | grep -o '[0-9]*' | awk '{s+=$1} END {print s}' || echo "0")
+            ERRORS=$(find target/surefire-reports -name "TEST-*.xml" -exec grep -h 'errors="[^"]*"' {} \; | grep -o '[0-9]*' | awk '{s+=$1} END {print s}' || echo "0")
+            SKIPPED=$(find target/surefire-reports -name "TEST-*.xml" -exec grep -h 'skipped="[^"]*"' {} \; | grep -o '[0-9]*' | awk '{s+=$1} END {print s}' || echo "0")
+            PASSED=$((TOTAL - FAILURES - ERRORS))
+          else
+            TOTAL=0; PASSED=0; FAILURES=0; ERRORS=0; SKIPPED=0
+          fi
+          
+          echo "total_tests=$TOTAL" >> $GITHUB_OUTPUT
+          echo "passed_tests=$PASSED" >> $GITHUB_OUTPUT
+          echo "failed_tests=$((FAILURES + ERRORS))" >> $GITHUB_OUTPUT
+          echo "skipped_tests=$SKIPPED" >> $GITHUB_OUTPUT
+          echo "service_name=${{ matrix.service }}" >> $GITHUB_OUTPUT
+          
+          echo "📊 Test Results: Total=$TOTAL, Passed=$PASSED, Failed=$((FAILURES + ERRORS)), Skipped=$SKIPPED"
+
+      - name: Run Maven compile - ${{ matrix.service }}
+        id: compile
+        if: steps.check-service.outputs.exists == 'true'
+        working-directory: ${{ matrix.service }}
+        run: |
+          echo "🔨 Compiling ${{ matrix.service }}..."
+          mvn clean compile -B -DskipTests
+          
+          if [ $? -eq 0 ]; then
+            echo "compile_status=success" >> $GITHUB_OUTPUT
+          else
+            echo "compile_status=failure" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run Maven package (without tests) - ${{ matrix.service }}
+        id: package
+        if: steps.check-service.outputs.exists == 'true' && steps.compile.outputs.compile_status == 'success'
+        working-directory: ${{ matrix.service }}
+        run: |
+          echo "📦 Packaging ${{ matrix.service }}..."
+          mvn package -B -DskipTests
+          
+          if [ $? -eq 0 ]; then
+            echo "package_status=success" >> $GITHUB_OUTPUT
+            # JAR 파일 정보
+            JAR_FILE=$(find target -name "*.jar" -not -name "*-sources.jar" | head -1)
+            if [ -f "$JAR_FILE" ]; then
+              JAR_SIZE=$(du -h "$JAR_FILE" | cut -f1)
+              echo "jar_file=$JAR_FILE" >> $GITHUB_OUTPUT
+              echo "jar_size=$JAR_SIZE" >> $GITHUB_OUTPUT
+              echo "📦 Generated JAR: $JAR_FILE ($JAR_SIZE)"
+            fi
+          else
+            echo "package_status=failure" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Upload test results - ${{ matrix.service }}
+        if: steps.check-service.outputs.exists == 'true' && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.service }}
+          path: |
+            ${{ matrix.service }}/target/surefire-reports/
+            ${{ matrix.service }}/target/*.jar
+          retention-days: 7
+
+  # 각 Spring Boot 서비스별 보안 스캔
+  security-scan:
+    needs: detect-changes
+    if: github.event_name == 'pull_request' && needs.detect-changes.outputs.services != ''
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+
+      - name: Cache Maven dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2
+          key: "${{ runner.os }}-m2-${{ hashFiles('**\/pom.xml') }}"
+          restore-keys: ${{ runner.os }}-m2
+
+      - name: Run OWASP Dependency Check - ${{ matrix.service }}
+        id: security
+        working-directory: ${{ matrix.service }}
+        continue-on-error: true
+        run: |
+          echo "🔒 Running security scan for ${{ matrix.service }}..."
+          
+          # OWASP Dependency Check 플러그인 실행
+          mvn org.owasp:dependency-check-maven:check \
+            -DfailBuildOnCVSS=7 \
+            -DsuppressionsLocation=../security/suppressions.xml \
+            -Dformat=JSON,HTML || true
+          
+          # 보안 스캔 결과 파싱
+          if [ -f "target/dependency-check-report.json" ]; then
+            HIGH=$(jq '[.dependencies[].vulnerabilities[]? | select(.severity=="HIGH")] | length' target/dependency-check-report.json || echo "0")
+            MEDIUM=$(jq '[.dependencies[].vulnerabilities[]? | select(.severity=="MEDIUM")] | length' target/dependency-check-report.json || echo "0")
+            LOW=$(jq '[.dependencies[].vulnerabilities[]? | select(.severity=="LOW")] | length' target/dependency-check-report.json || echo "0")
+            TOTAL=$((HIGH + MEDIUM + LOW))
+          else
+            HIGH=0; MEDIUM=0; LOW=0; TOTAL=0
+          fi
+
+          echo "high_issues=$HIGH" >> $GITHUB_OUTPUT
+          echo "medium_issues=$MEDIUM" >> $GITHUB_OUTPUT
+          echo "low_issues=$LOW" >> $GITHUB_OUTPUT
+          echo "total_issues=$TOTAL" >> $GITHUB_OUTPUT
+          echo "service_name=${{ matrix.service }}" >> $GITHUB_OUTPUT
+          
+          echo "🔒 Security Results: High=$HIGH, Medium=$MEDIUM, Low=$LOW"
+
+      - name: Upload security scan results - ${{ matrix.service }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-scan-${{ matrix.service }}
+          path: |
+            ${{ matrix.service }}/target/dependency-check-report.*
+          retention-days: 7
+
+  # 결과 통합
+  aggregate-results:
+    needs: [ detect-changes, test-and-build, security-scan ]
+    if: github.event_name == 'pull_request' && always() && needs.detect-changes.outputs.services != ''
+    runs-on: ubuntu-latest
+    outputs:
+      total_tests: ${{ steps.aggregate.outputs.total_tests }}
+      passed_tests: ${{ steps.aggregate.outputs.passed_tests }}
+      failed_tests: ${{ steps.aggregate.outputs.failed_tests }}
+      skipped_tests: ${{ steps.aggregate.outputs.skipped_tests }}
+      compile_errors: ${{ steps.aggregate.outputs.compile_errors }}
+      package_errors: ${{ steps.aggregate.outputs.package_errors }}
+      high_issues: ${{ steps.aggregate.outputs.high_issues }}
+      medium_issues: ${{ steps.aggregate.outputs.medium_issues }}
+      low_issues: ${{ steps.aggregate.outputs.low_issues }}
+      total_issues: ${{ steps.aggregate.outputs.total_issues }}
+      failed_services: ${{ steps.aggregate.outputs.failed_services }}
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Aggregate results
+        id: aggregate
+        run: |
+          # 모든 결과 통합
+          TOTAL_TESTS=0
+          PASSED_TESTS=0
+          FAILED_TESTS=0
+          SKIPPED_TESTS=0
+          COMPILE_ERRORS=0
+          PACKAGE_ERRORS=0
+          TOTAL_HIGH=0
+          TOTAL_MEDIUM=0
+          TOTAL_LOW=0
+          FAILED_SERVICES=""
+
+          # 각 서비스별 결과 집계
+          for dir in test-results-*; do
+            if [ -d "$dir" ]; then
+              SERVICE_NAME=$(echo "$dir" | sed 's/test-results-//')
+          
+              # 테스트 결과 파싱
+              if find "$dir" -name "TEST-*.xml" -type f | head -1 | xargs test -f; then
+                T=$(find "$dir" -name "TEST-*.xml" -exec grep -h 'tests="[^"]*"' {} \; | grep -o '[0-9]*' | awk '{s+=$1} END {print s}' || echo "0")
+                F=$(find "$dir" -name "TEST-*.xml" -exec grep -h 'failures="[^"]*"' {} \; | grep -o '[0-9]*' | awk '{s+=$1} END {print s}' || echo "0")
+                E=$(find "$dir" -name "TEST-*.xml" -exec grep -h 'errors="[^"]*"' {} \; | grep -o '[0-9]*' | awk '{s+=$1} END {print s}' || echo "0")
+                S=$(find "$dir" -name "TEST-*.xml" -exec grep -h 'skipped="[^"]*"' {} \; | grep -o '[0-9]*' | awk '{s+=$1} END {print s}' || echo "0")
+
+                TOTAL_TESTS=$((TOTAL_TESTS + T))
+                FAILED_TESTS=$((FAILED_TESTS + F + E))
+                SKIPPED_TESTS=$((SKIPPED_TESTS + S))
+                PASSED_TESTS=$((PASSED_TESTS + T - F - E))
+
+                # 실패한 서비스 추적
+                if [ $((F + E)) -gt 0 ]; then
+                  FAILED_SERVICES="$FAILED_SERVICES,$SERVICE_NAME"
+                fi
+              fi
+            fi
+          done
+
+          # 보안 스캔 결과 집계
+          for dir in security-scan-*; do
+            if [ -d "$dir" ] && [ -f "$dir/dependency-check-report.json" ]; then
+              H=$(jq '[.dependencies[].vulnerabilities[]? | select(.severity=="HIGH")] | length' "$dir/dependency-check-report.json" || echo "0")
+              M=$(jq '[.dependencies[].vulnerabilities[]? | select(.severity=="MEDIUM")] | length' "$dir/dependency-check-report.json" || echo "0")
+              L=$(jq '[.dependencies[].vulnerabilities[]? | select(.severity=="LOW")] | length' "$dir/dependency-check-report.json" || echo "0")
+
+              TOTAL_HIGH=$((TOTAL_HIGH + H))
+              TOTAL_MEDIUM=$((TOTAL_MEDIUM + M))
+              TOTAL_LOW=$((TOTAL_LOW + L))
+            fi
+          done
+
+          # Outputs 설정
+          echo "total_tests=$TOTAL_TESTS" >> $GITHUB_OUTPUT
+          echo "passed_tests=$PASSED_TESTS" >> $GITHUB_OUTPUT
+          echo "failed_tests=$FAILED_TESTS" >> $GITHUB_OUTPUT
+          echo "skipped_tests=$SKIPPED_TESTS" >> $GITHUB_OUTPUT
+          echo "compile_errors=$COMPILE_ERRORS" >> $GITHUB_OUTPUT
+          echo "package_errors=$PACKAGE_ERRORS" >> $GITHUB_OUTPUT
+          echo "high_issues=$TOTAL_HIGH" >> $GITHUB_OUTPUT
+          echo "medium_issues=$TOTAL_MEDIUM" >> $GITHUB_OUTPUT
+          echo "low_issues=$TOTAL_LOW" >> $GITHUB_OUTPUT
+          echo "total_issues=$((TOTAL_HIGH + TOTAL_MEDIUM + TOTAL_LOW))" >> $GITHUB_OUTPUT
+          echo "failed_services=${FAILED_SERVICES#,}" >> $GITHUB_OUTPUT
+
+  # 각 서비스별 Docker 빌드 및 푸시 (main 브랜치만)
+  build-and-push:
+    needs: detect-changes
+    if: github.ref == 'refs/heads/main' && needs.detect-changes.outputs.services != ''
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+
+      - name: Cache Maven dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2
+          key: "${{ runner.os }}-m2-${{ hashFiles('**\/pom.xml') }}"
+          restore-keys: ${{ runner.os }}-m2
+
+      - name: Build JAR file - ${{ matrix.service }}
+        working-directory: ${{ matrix.service }}
+        run: |
+          echo "🔨 Building JAR for ${{ matrix.service }}..."
+          mvn clean package -B -DskipTests
+          
+          # JAR 파일 확인
+          JAR_FILE=$(find target -name "*.jar" -not -name "*-sources.jar" | head -1)
+          if [ -f "$JAR_FILE" ]; then
+            echo "✅ JAR built successfully: $JAR_FILE"
+          else
+            echo "❌ JAR build failed"
+            exit 1
+          fi
+
+      - name: Check if Dockerfile exists for ${{ matrix.service }}
+        id: dockerfile-check
+        run: |
+          if [ -f "${{ matrix.service }}/Dockerfile" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "⚠️ Dockerfile not found for ${{ matrix.service }}"
+          fi
+
+      - name: Login to Azure Container Registry
+        if: steps.dockerfile-check.outputs.exists == 'true'
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{ env.REGISTRY }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+
+      - name: Build and push Docker image - ${{ matrix.service }}
+        if: steps.dockerfile-check.outputs.exists == 'true'
+        working-directory: ${{ matrix.service }}
+        run: |
+          IMAGE_NAME="smart-be-${{ matrix.service }}"
+          
+          echo "🐳 Building Docker image for ${{ matrix.service }}..."
+          docker build -t ${{ env.REGISTRY }}/${IMAGE_NAME}:${{ github.sha }} .
+          docker build -t ${{ env.REGISTRY }}/${IMAGE_NAME}:latest .
+          
+          echo "📤 Pushing Docker image to ACR..."
+          docker push ${{ env.REGISTRY }}/${IMAGE_NAME}:${{ github.sha }}
+          docker push ${{ env.REGISTRY }}/${IMAGE_NAME}:latest
+          
+          echo "✅ Built and pushed image: ${{ env.REGISTRY }}/${IMAGE_NAME}:${{ github.sha }}"
+
+  # Pull Request 자동 리뷰
+  auto-review:
+    needs: [ detect-changes, aggregate-results ]
+    if: github.event_name == 'pull_request' && needs.detect-changes.outputs.services != '' && always()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: PR Code Review Comment
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const changedServices = "${{ needs.detect-changes.outputs.services }}".split(' ').filter(s => s.trim());
+
+            if (changedServices.length === 0) {
+              console.log('No Spring Boot services detected, skipping review comment');
+              return;
+            }
+
+            try {
+              const detectionMethod = "${{ needs.detect-changes.outputs.detection_method }}";
+              const prTitle = "${{ github.event.pull_request.title }}";
+
+              // 각 작업의 결과 수집
+              const testResult = "${{ needs.test-and-build.result }}";
+              const securityResult = "${{ needs.security-scan.result }}";
+
+              // 테스트 결과 파싱
+              const testOutputs = {
+                total: "${{ needs.aggregate-results.outputs.total_tests || '0' }}",
+                passed: "${{ needs.aggregate-results.outputs.passed_tests || '0' }}",
+                failed: "${{ needs.aggregate-results.outputs.failed_tests || '0' }}",
+                skipped: "${{ needs.aggregate-results.outputs.skipped_tests || '0' }}",
+                failedServices: "${{ needs.aggregate-results.outputs.failed_services || '' }}",
+                compileErrors: "${{ needs.aggregate-results.outputs.compile_errors || '0' }}",
+                packageErrors: "${{ needs.aggregate-results.outputs.package_errors || '0' }}"
+              };
+
+              // 보안 스캔 결과
+              const securityOutputs = {
+                highIssues: "${{ needs.aggregate-results.outputs.high_issues || '0' }}",
+                mediumIssues: "${{ needs.aggregate-results.outputs.medium_issues || '0' }}",
+                lowIssues: "${{ needs.aggregate-results.outputs.low_issues || '0' }}",
+                totalIssues: "${{ needs.aggregate-results.outputs.total_issues || '0' }}"
+              };
+
+              let reviewComment = "## 🤖 Smart BE Spring Boot 자동 코드 리뷰\n\n";
+              reviewComment += `### 📦 변경된 Spring Boot 서비스 (${changedServices.length}개):\n`;
+
+              changedServices.forEach(service => {
+                reviewComment += `- **${service}** 서비스\n`;
+              });
+
+              // 감지 방법에 따른 메시지
+              if (detectionMethod === "pr_title") {
+                reviewComment += "\n🎯 **PR 제목에서 서비스 자동 감지됨**\n";
+                reviewComment += `- 제목: \`${prTitle}\`\n`;
+              } else if (detectionMethod === "git_diff") {
+                reviewComment += "\n🔍 **Git diff를 통해 서비스 감지됨**\n";
+              }
+
+              // 전체 상태 요약
+              reviewComment += "\n### 📊 전체 검사 결과:\n";
+              const allPassed = testResult === 'success' && securityResult === 'success';
+
+              if (allPassed) {
+                reviewComment += "✅ **모든 검사 통과** - 배포 준비 완료!\n";
+              } else {
+                reviewComment += "⚠️ **일부 검사에서 문제 발견** - 확인 필요\n";
+              }
+
+              // 빌드 & 테스트 결과 섹션
+              reviewComment += "\n### 🔨 빌드 & 테스트 결과:\n";
+
+              if (testResult === 'success') {
+                reviewComment += "✅ **빌드 & 테스트 통과**\n";
+              } else if (testResult === 'failure') {
+                reviewComment += "❌ **빌드 & 테스트 실패**\n";
+              } else {
+                reviewComment += "⚠️ **빌드 & 테스트 상태 불명**\n";
+              }
+
+              // 테스트 통계
+              if (testOutputs.total !== '0') {
+                reviewComment += `- **총 테스트**: ${testOutputs.total}개\n`;
+                reviewComment += `- **성공**: ${testOutputs.passed}개 ✅\n`;
+
+                if (testOutputs.failed !== '0') {
+                  reviewComment += `- **실패**: ${testOutputs.failed}개 ❌\n`;
+                }
+
+                if (testOutputs.skipped !== '0') {
+                  reviewComment += `- **스킵**: ${testOutputs.skipped}개 ⏭️\n`;
+                }
+              }
+
+              // 실패한 서비스 상세 정보
+              if (testOutputs.failedServices) {
+                reviewComment += "\n**🔍 문제가 있는 서비스:**\n";
+                const failedServicesList = testOutputs.failedServices.split(',').filter(s => s.trim());
+                failedServicesList.forEach(service => {
+                  reviewComment += `- \`${service.trim()}\`\n`;
+                });
+              }
+
+              // 보안 스캔 결과 섹션
+              reviewComment += "\n### 🔒 보안 스캔 결과:\n";
+
+              if (securityResult === 'success') {
+                reviewComment += "✅ **보안 검사 통과**\n";
+              } else if (securityResult === 'failure') {
+                reviewComment += "❌ **보안 이슈 발견**\n";
+              } else {
+                reviewComment += "⚠️ **보안 스캔 상태 불명**\n";
+              }
+
+              if (securityOutputs.totalIssues !== '0') {
+                reviewComment += `- **총 보안 이슈**: ${securityOutputs.totalIssues}개\n`;
+
+                if (securityOutputs.highIssues !== '0') {
+                  reviewComment += `  - 🔴 **High**: ${securityOutputs.highIssues}개\n`;
+                }
+                if (securityOutputs.mediumIssues !== '0') {
+                  reviewComment += `  - 🟡 **Medium**: ${securityOutputs.mediumIssues}개\n`;
+                }
+                if (securityOutputs.lowIssues !== '0') {
+                  reviewComment += `  - 🟢 **Low**: ${securityOutputs.lowIssues}개\n`;
+                }
+              } else {
+                reviewComment += "- 보안 이슈가 발견되지 않았습니다 ✅\n";
+              }
+
+              // 종합 체크리스트
+              reviewComment += "\n### ✅ 검사 체크리스트:\n";
+              reviewComment += testResult === 'success' ? 
+                "- ✅ 빌드 & 테스트 통과\n" : 
+                "- ❌ 빌드 & 테스트 실패\n";
+              reviewComment += testOutputs.compileErrors === '0' ? 
+                "- ✅ 컴파일 성공\n" : 
+                "- ❌ 컴파일 오류 발견\n";
+              reviewComment += securityResult === 'success' ? 
+                "- ✅ 보안 스캔 통과\n" : 
+                "- ❌ 보안 이슈 발견\n";
+
+              // 배포 정보
+              reviewComment += "\n### 🚀 배포 정보:\n";
+              if (allPassed) {
+                reviewComment += "- ✅ **모든 검사 통과** - 배포 준비 완료\n";
+                reviewComment += "- 🔄 main 브랜치 머지 시 자동 배포됩니다\n";
+                reviewComment += "- 🏗️ 각 Spring Boot 서비스는 독립적으로 빌드/배포됩니다\n";
+                reviewComment += "- 🗄️ 서비스별 독립 데이터베이스가 생성됩니다\n";
+              } else {
+                reviewComment += "- ⚠️ **검사 실패** - 문제 해결 후 배포 가능\n";
+                if (testResult !== 'success') {
+                  reviewComment += "  - 🧪 빌드/테스트 문제 해결 필요\n";
+                }
+                if (securityResult !== 'success') {
+                  reviewComment += "  - 🔒 보안 이슈 해결 필요\n";
+                }
+              }
+              reviewComment += "- 📋 상세 로그는 Actions 탭에서 확인 가능\n";
+
+              // Spring Boot 특화 정보
+              reviewComment += "\n### ☕ Spring Boot 서비스 정보:\n";
+              reviewComment += "- 🗄️ **데이터베이스**: 각 서비스별 독립 PostgreSQL\n";
+              reviewComment += "- 🔐 **인증**: JWT 기반 보안\n";
+              reviewComment += "- 📨 **메시징**: Kafka Stream 연동\n";
+              reviewComment += "- 🔧 **설정**: Profile별 환경 분리 (default/docker/production)\n";
+              reviewComment += "- 📊 **모니터링**: Actuator 헬스체크 제공\n";
+
+              // 기존 자동 리뷰 코멘트가 있는지 확인하고 업데이트
+              const { data: comments } = await github.rest.issues.listComments({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+              });
+
+              const botComment = comments.find(comment => 
+                comment.user.type === 'Bot' && 
+                comment.body.includes('🤖 Smart BE Spring Boot 자동 코드 리뷰')
+              );
+
+              if (botComment) {
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: botComment.id,
+                  body: reviewComment
+                });
+                console.log('Updated existing Spring Boot review comment');
+              } else {
+                await github.rest.issues.createComment({
+                  issue_number: context.issue.number,
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  body: reviewComment
+                });
+                console.log('Created new Spring Boot review comment');
+              }
+
+            } catch (error) {
+              console.error('Error creating Spring Boot review comment:', error);
+              process.exit(0);
+            }
