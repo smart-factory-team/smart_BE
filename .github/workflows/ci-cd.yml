@@ -285,8 +285,7 @@ jobs:
           mvn org.owasp:dependency-check-maven:check \
             -Dnvd.api.key=${NVD_API_KEY} \
             -DfailBuildOnCVSS=7 \
-            -DsuppressionsLocation=../security/suppressions.xml \
-            -Dformat=JSON,HTML || true
+            -Dformat=JSON || true
           
           # 보안 스캔 결과 파싱
           if [ -f "target/dependency-check-report.json" ]; then
