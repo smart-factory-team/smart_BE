@@ -152,7 +152,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/.m2
-          key: "${{ runner.os }}-m2-${{ hashFiles('**\/pom.xml') }}"
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-m2
 
       - name: Check if service directory exists
@@ -269,7 +269,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/.m2
-          key: "${{ runner.os }}-m2-${{ hashFiles('**\/pom.xml') }}"
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-m2
 
       - name: Run OWASP Dependency Check - ${{ matrix.service }}
@@ -422,7 +422,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/.m2
-          key: "${{ runner.os }}-m2-${{ hashFiles('**\/pom.xml') }}"
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-m2
 
       - name: Build JAR file - ${{ matrix.service }}
