@@ -684,3 +684,108 @@ jobs:
               console.error('Error creating Spring Boot review comment:', error);
               process.exit(0);
             }
+
+  # 각 서비스별 AKS 배포
+  deploy-to-aks:
+    needs: [ detect-changes, build-and-push ]
+    if: github.ref == 'refs/heads/main' && needs.detect-changes.outputs.services != ''
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Get AKS credentials
+        run: |
+          az aks get-credentials --resource-group ${{ env.AKS_RESOURCE_GROUP }} --name ${{ env.AKS_CLUSTER_NAME }}
+
+      - name: Deploy Infrastructure (first service only)
+        if: matrix.service == 'usermanagement'
+        run: |
+          echo "🏗️ Deploying infrastructure components for first service..."
+          
+          # 1. Create namespace
+          kubectl apply -f kubernetes/namespace.yml
+          
+          # 2. Create secrets
+          echo "🔐 Creating Kubernetes secrets..."
+          kubectl create secret generic postgres-secret \
+            --from-literal=username=${{ secrets.POSTGRES_USERNAME }} \
+            --from-literal=password=${{ secrets.POSTGRES_PASSWORD }} \
+            -n smart-be \
+            --dry-run=client -o yaml | kubectl apply -f -
+          
+          kubectl create secret generic app-secrets \
+            --from-literal=jwt-secret=${{ secrets.JWT_SECRET }} \
+            -n smart-be \
+            --dry-run=client -o yaml | kubectl apply -f -
+                      
+          echo "✅ Secrets created successfully!"
+          
+          # 3. Deploy PostgreSQL (wait for it to be ready)
+          kubectl apply -f kubernetes/postgres-statefulset.yml
+          
+          # Wait for PostgreSQL to be ready
+          echo "⏳ Waiting for PostgreSQL to be ready..."
+          kubectl wait --for=condition=Ready pod -l app=postgres -n smart-be --timeout=300s
+          
+          echo "✅ Infrastructure deployment completed!"
+
+      - name: Deploy Spring Boot Service - ${{ matrix.service }}
+        run: |
+          echo "🚀 Deploying ${{ matrix.service }} service..."
+          
+          # Update image tag in template.yml for specific service
+          export SERVICE_NAME="${{ matrix.service }}"
+          export IMAGE_TAG="${{ github.sha }}"
+          export REGISTRY="${{ env.REGISTRY }}"
+          
+          # Create temporary deployment file for this service only
+          cat kubernetes/template.yml | grep -A 50 "name: ${{ matrix.service }}" | \
+          sed "s|23acr.azurecr.io/smart-be-${{ matrix.service }}:latest|${{ env.REGISTRY }}/smart-be-${{ matrix.service }}:${{ github.sha }}|g" > temp-${{ matrix.service }}.yml
+          
+          # Apply the service-specific deployment
+          kubectl apply -f temp-${{ matrix.service }}.yml
+          
+          # Wait for deployment to be ready
+          echo "⏳ Waiting for ${{ matrix.service }} deployment to be ready..."
+          kubectl rollout status deployment/${{ matrix.service }} -n smart-be --timeout=300s
+          
+          # Clean up temp file
+          rm -f temp-${{ matrix.service }}.yml
+
+      - name: Verify Deployment - ${{ matrix.service }}
+        run: |
+          echo "🔍 Verifying ${{ matrix.service }} deployment..."
+          
+          # Get pod status
+          POD_STATUS=$(kubectl get pods -n smart-be -l app=${{ matrix.service }} -o jsonpath='{.items[0].status.phase}' 2>/dev/null || echo "NotFound")
+          echo "Pod Status: $POD_STATUS"
+          
+          # Get service info
+          kubectl get service ${{ matrix.service }} -n smart-be || echo "Service not found"
+          
+          # Check logs if pod is not running
+          if [ "$POD_STATUS" != "Running" ]; then
+            echo "❌ Pod is not running. Checking logs..."
+            kubectl logs -l app=${{ matrix.service }} -n smart-be --tail=50 || echo "No logs available"
+            kubectl describe pod -l app=${{ matrix.service }} -n smart-be || echo "No pods found"
+          else
+            echo "✅ ${{ matrix.service }} is running successfully!"
+          
+            # Try to get service endpoint (if available)
+            EXTERNAL_IP=$(kubectl get service ingress-nginx-controller -n ingress-nginx -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "pending")
+            if [ "$EXTERNAL_IP" != "pending" ] && [ ! -z "$EXTERNAL_IP" ]; then
+              echo "🌐 Service might be accessible at: http://$EXTERNAL_IP/actuator/health"
+            else
+              echo "💡 Use kubectl port-forward to test: kubectl port-forward -n smart-be svc/${{ matrix.service }} 8080:8080"
+            fi
+          fi

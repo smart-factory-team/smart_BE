@@ -1,0 +1,162 @@
+# kubernetes/postgres-postgres-statefulset.yml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init-script
+  namespace: smart-be
+data:
+  init-multiple-databases.sh: |
+    #!/bin/bash
+    set -e
+    set -u
+    
+    function create_user_and_database() {
+      local database=$1
+      echo "  Creating database '$database' for microservice"
+      psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" <<-EOSQL
+          CREATE DATABASE $database;
+          GRANT ALL PRIVILEGES ON DATABASE $database TO $POSTGRES_USER;
+    
+          -- 각 서비스별 스키마 생성 (선택사항)
+          \c $database
+          CREATE SCHEMA IF NOT EXISTS $database;
+          GRANT ALL PRIVILEGES ON SCHEMA $database TO $POSTGRES_USER;
+    EOSQL
+    }
+    
+    if [ -n "$POSTGRES_MULTIPLE_DATABASES" ]; then
+      echo "Multiple database creation requested: $POSTGRES_MULTIPLE_DATABASES"
+      for db in $(echo $POSTGRES_MULTIPLE_DATABASES | tr ',' ' '); do
+       create_user_and_database $db
+      done
+      echo "Multiple databases created successfully!"
+      echo "Created databases: $POSTGRES_MULTIPLE_DATABASES"
+    fi
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+  namespace: smart-be
+  labels:
+    app: postgres
+    app.kubernetes.io/name: postgres
+    app.kubernetes.io/part-of: smart-be
+spec:
+  serviceName: postgres-headless
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:15-alpine
+          ports:
+            - containerPort: 5432
+              name: postgres
+          env:
+            - name: POSTGRES_DB
+              value: "smartfactory"
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: username
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: password
+            - name: POSTGRES_MULTIPLE_DATABASES
+              value: "usermanagement,report,approvalmanagement,pressfaultdetection,chatbot,assemblyprocessmonitoring,weldingprocessmonitoring,paintingprocessmonitoring"
+            - name: PGDATA
+              value: "/var/lib/postgresql/data/pgdata"
+          volumeMounts:
+            - name: postgres-storage
+              mountPath: "/var/lib/postgresql/data"
+            - name: postgres-init-script
+              mountPath: "/docker-entrypoint-initdb.d"
+              readOnly: true
+          livenessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - postgres
+                - -d
+                - smartfactory
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - postgres
+                - -d
+                - smartfactory
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
+      volumes:
+        - name: postgres-init-script
+          configMap:
+            name: postgres-init-script
+            defaultMode: 0755
+  volumeClaimTemplates:
+    - metadata:
+        name: postgres-storage
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: "10Gi"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-headless
+  namespace: smart-be
+  labels:
+    app: postgres
+spec:
+  clusterIP: None
+  ports:
+    - port: 5432
+      targetPort: 5432
+      name: postgres
+  selector:
+    app: postgres
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: smart-be
+  labels:
+    app: postgres
+spec:
+  ports:
+    - port: 5432
+      targetPort: 5432
+      name: postgres
+  selector:
+    app: postgres
