@@ -1,11 +1,10 @@
 package carsmartfactory.infra;
 
 import carsmartfactory.UsermanagementApplication;
-import carsmartfactory.config.kafka.KafkaProcessor;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.BeanUtils;
-import org.springframework.messaging.MessageChannel;
+import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.messaging.MessageHeaders;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -29,34 +28,50 @@ public class AbstractEvent {
     }
 
     public void publish() {
-        /**
-         * spring streams 방식
-         */
-        KafkaProcessor processor = UsermanagementApplication.applicationContext.getBean(
-            KafkaProcessor.class
-        );
-        MessageChannel outputChannel = processor.outboundTopic();
+        System.out.println("##### Attempting to publish event: " + getEventType() + " #####");
 
-        outputChannel.send(
-            MessageBuilder
-                .withPayload(this)
-                .setHeader(
-                    MessageHeaders.CONTENT_TYPE,
-                    MimeTypeUtils.APPLICATION_JSON
-                )
-                .setHeader("type", getEventType())
-                .build()
-        );
+        try {
+            /**
+             * Spring Cloud Stream 4.x StreamBridge 방식
+             */
+            StreamBridge streamBridge = UsermanagementApplication.applicationContext.getBean(
+                    StreamBridge.class
+            );
+
+            boolean sent = streamBridge.send(
+                    "event-out", // binding name (application.yml의 eventOut-out-0과 연결)
+                    MessageBuilder
+                            .withPayload(this)
+                            .setHeader(
+                                    MessageHeaders.CONTENT_TYPE,
+                                    MimeTypeUtils.APPLICATION_JSON
+                            )
+                            .setHeader("type", getEventType())
+                            .build()
+            );
+
+            if (sent) {
+                System.out.println("##### Event published successfully to Kafka: " + getEventType() + " #####");
+                System.out.println("##### Event payload: " + this.toJson() + " #####");
+            } else {
+                System.err.println("##### Failed to publish event to Kafka: " + getEventType() + " #####");
+                throw new RuntimeException("Failed to publish event to Kafka: " + getEventType());
+            }
+
+        } catch (Exception e) {
+            System.err.println("##### Error publishing event: " + getEventType() + " - " + e.getMessage() + " #####");
+            throw new RuntimeException("Failed to publish event: " + getEventType(), e);
+        }
     }
 
     public void publishAfterCommit() {
         TransactionSynchronizationManager.registerSynchronization(
-            new TransactionSynchronization() {
-                @Override
-                public void afterCommit() {
-                    AbstractEvent.this.publish();
+                new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        AbstractEvent.this.publish();
+                    }
                 }
-            }
         );
     }
 
