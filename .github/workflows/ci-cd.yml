@@ -716,7 +716,19 @@ jobs:
           kubectl apply -f kubernetes/namespace.yml
           
           # 2. Create secrets
-          kubectl apply -f kubernetes/secrets.yml
+          echo "🔐 Creating Kubernetes secrets..."
+          kubectl create secret generic postgres-secret \
+            --from-literal=username=${{ secrets.POSTGRES_USERNAME }} \
+            --from-literal=password=${{ secrets.POSTGRES_PASSWORD }} \
+            -n smart-be \
+            --dry-run=client -o yaml | kubectl apply -f -
+          
+          kubectl create secret generic app-secrets \
+            --from-literal=jwt-secret=${{ secrets.JWT_SECRET }} \
+            -n smart-be \
+            --dry-run=client -o yaml | kubectl apply -f -
+                      
+          echo "✅ Secrets created successfully!"
           
           # 3. Deploy PostgreSQL (wait for it to be ready)
           kubectl apply -f kubernetes/postgres-statefulset.yml
