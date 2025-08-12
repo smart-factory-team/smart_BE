@@ -1,14 +1,13 @@
 package carsmartfactory.domain;
 
 import carsmartfactory.UsermanagementApplication;
-import carsmartfactory.domain.UserRegistered;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.time.LocalDate;
-import java.util.Collections;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.Id;
+import jakarta.persistence.PostPersist;
+import jakarta.persistence.Table;
 import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import javax.persistence.*;
 import lombok.Data;
 
 @Entity
@@ -30,6 +29,7 @@ public class UserRegisteration {
 
     private Date createdAt;
 
+    @Enumerated(EnumType.STRING)  // UserRole Enum 매핑 추가
     private UserRole role;
 
     @PostPersist
@@ -40,7 +40,7 @@ public class UserRegisteration {
 
     public static UserRegisterationRepository repository() {
         UserRegisterationRepository userRegisterationRepository = UsermanagementApplication.applicationContext.getBean(
-            UserRegisterationRepository.class
+                UserRegisterationRepository.class
         );
         return userRegisterationRepository;
     }
