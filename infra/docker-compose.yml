@@ -1,4 +1,29 @@
 services:
+  # PostgreSQL Database - 모든 마이크로서비스 공용
+  postgres:
+    image: postgres:15-alpine
+    container_name: smart-factory-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: smartfactory
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      # 각 마이크로서비스별 스키마 자동 생성
+      POSTGRES_MULTIPLE_DATABASES: usermanagement,report,approvalmanagement,pressfaultdetection,chatbot,assemblyprocessmonitoring,weldingprocessmonitoring
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-multiple-databases.sh:/docker-entrypoint-initdb.d/init-multiple-databases.sh
+    networks:
+      - smart-factory-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d smartfactory"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Kafka - 기존 설정 유지
   kafka:
     image: confluentinc/cp-kafka:latest
     container_name: kafka
@@ -27,13 +52,38 @@ services:
       KAFKA_LOG_RETENTION_HOURS: 168
       KAFKA_LOG_DIRS: "/var/lib/kafka/data"
     volumes:
-      - kafka-data:/var/lib/kafka/data
-
+      - kafka_data:/var/lib/kafka/data
+    networks:
+      - smart-factory-network
     healthcheck:
       test: ["CMD-SHELL", "kafka-topics --list --bootstrap-server localhost:9092 || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
 
+  # 개발용 PostgreSQL 관리 도구 (선택사항)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: smart-factory-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@smartfactory.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    networks:
+      - smart-factory-network
+
 volumes:
-  kafka-data:
+  kafka_data:
+    driver: local
+  postgres_data:
+    driver: local
+
+networks:
+  smart-factory-network:
+    driver: bridge
+    name: smart-factory-network
