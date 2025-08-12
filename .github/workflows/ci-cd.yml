@@ -37,7 +37,9 @@ env:
   AKS_CLUSTER_NAME: 23-aks
   AKS_RESOURCE_GROUP: 23-rsrc
   JAVA_VERSION: '17'
-  MAVEN_OPTS: '-Xmx1024m -XX:MaxPermSize=256m'
+  MAVEN_OPTS: '-Xmx1024m'
+  NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
+
 
 jobs:
   # 변경된 Spring Boot 서비스 감지
@@ -152,7 +154,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/.m2
-          key: "${{ runner.os }}-m2-${{ hashFiles('**\/pom.xml') }}"
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-m2
 
       - name: Check if service directory exists
@@ -269,7 +271,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/.m2
-          key: "${{ runner.os }}-m2-${{ hashFiles('**\/pom.xml') }}"
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-m2
 
       - name: Run OWASP Dependency Check - ${{ matrix.service }}
@@ -281,9 +283,9 @@ jobs:
           
           # OWASP Dependency Check 플러그인 실행
           mvn org.owasp:dependency-check-maven:check \
+            -Dnvd.api.key=${NVD_API_KEY} \
             -DfailBuildOnCVSS=7 \
-            -DsuppressionsLocation=../security/suppressions.xml \
-            -Dformat=JSON,HTML || true
+            -Dformat=JSON || true
           
           # 보안 스캔 결과 파싱
           if [ -f "target/dependency-check-report.json" ]; then
@@ -422,7 +424,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/.m2
-          key: "${{ runner.os }}-m2-${{ hashFiles('**\/pom.xml') }}"
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-m2
 
       - name: Build JAR file - ${{ matrix.service }}

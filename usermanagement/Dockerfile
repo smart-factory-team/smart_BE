@@ -1,5 +1,6 @@
 # usermanagement/Dockerfile
 # Multi-stage build for optimized Spring Boot application
+# CI test
 
 # Stage 1: Build stage - 확실히 존재하는 이미지 사용
 FROM maven:3-openjdk-17 AS builder
