@@ -37,7 +37,7 @@ env:
   AKS_CLUSTER_NAME: 23-aks
   AKS_RESOURCE_GROUP: 23-rsrc
   JAVA_VERSION: '17'
-  MAVEN_OPTS: '-Xmx1024m -XX:MaxPermSize=256m'
+  MAVEN_OPTS: '-Xmx1024m'
 
 jobs:
   # 변경된 Spring Boot 서비스 감지
