@@ -9,7 +9,8 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import javax.persistence.*;
+// javax → jakarta 패키지 변경
+import jakarta.persistence.*;
 import lombok.Data;
 
 @Entity
@@ -49,14 +50,14 @@ public class PaintingSurfaceDefectDetectionLog {
     @PostPersist
     public void onPostPersist() {
         PaintingSurfaceDefectSaved paintingSurfaceDefectSaved = new PaintingSurfaceDefectSaved(
-            this
+                this
         );
         paintingSurfaceDefectSaved.publishAfterCommit();
     }
 
     public static PaintingSurfaceDefectDetectionLogRepository repository() {
         PaintingSurfaceDefectDetectionLogRepository paintingSurfaceDefectDetectionLogRepository = PaintingprocessmonitoringApplication.applicationContext.getBean(
-            PaintingSurfaceDefectDetectionLogRepository.class
+                PaintingSurfaceDefectDetectionLogRepository.class
         );
         return paintingSurfaceDefectDetectionLogRepository;
     }
@@ -65,27 +66,27 @@ public class PaintingSurfaceDefectDetectionLog {
     public static void surfaceIssueSolvedPolicy(IssueSolved issueSolved) {
         //implement business logic here:
 
-        /** Example 1:  new item 
-        PaintingSurfaceDefectDetectionLog paintingSurfaceDefectDetectionLog = new PaintingSurfaceDefectDetectionLog();
-        repository().save(paintingSurfaceDefectDetectionLog);
+        /** Example 1:  new item
+         PaintingSurfaceDefectDetectionLog paintingSurfaceDefectDetectionLog = new PaintingSurfaceDefectDetectionLog();
+         repository().save(paintingSurfaceDefectDetectionLog);
 
-        SurfaceIssueSolved surfaceIssueSolved = new SurfaceIssueSolved(paintingSurfaceDefectDetectionLog);
-        surfaceIssueSolved.publishAfterCommit();
-        */
+         SurfaceIssueSolved surfaceIssueSolved = new SurfaceIssueSolved(paintingSurfaceDefectDetectionLog);
+         surfaceIssueSolved.publishAfterCommit();
+         */
 
         /** Example 2:  finding and process
-        
 
-        repository().findById(issueSolved.get???()).ifPresent(paintingSurfaceDefectDetectionLog->{
-            
-            paintingSurfaceDefectDetectionLog // do something
-            repository().save(paintingSurfaceDefectDetectionLog);
 
-            SurfaceIssueSolved surfaceIssueSolved = new SurfaceIssueSolved(paintingSurfaceDefectDetectionLog);
-            surfaceIssueSolved.publishAfterCommit();
+         repository().findById(issueSolved.get???()).ifPresent(paintingSurfaceDefectDetectionLog->{
+
+         paintingSurfaceDefectDetectionLog // do something
+         repository().save(paintingSurfaceDefectDetectionLog);
+
+         SurfaceIssueSolved surfaceIssueSolved = new SurfaceIssueSolved(paintingSurfaceDefectDetectionLog);
+         surfaceIssueSolved.publishAfterCommit();
 
          });
-        */
+         */
 
     }
     //>>> Clean Arch / Port Method
