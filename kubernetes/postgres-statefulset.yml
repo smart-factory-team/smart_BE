@@ -1,4 +1,4 @@
-# kubernetes/postgres-postgres-statefulset.yml
+# kubernetes/postgres-statefulset.yml
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -91,10 +91,10 @@ spec:
                 - postgres
                 - -d
                 - smartfactory
-            initialDelaySeconds: 30
-            periodSeconds: 10
-            timeoutSeconds: 5
-            failureThreshold: 3
+            initialDelaySeconds: 60    # 30 → 60 (더 오래 기다림)
+            periodSeconds: 30          # 10 → 30 (덜 자주 체크)
+            timeoutSeconds: 10         # 5 → 10 (더 오래 기다림)
+            failureThreshold: 6        # 3 → 6 (더 관대하게)
           readinessProbe:
             exec:
               command:
@@ -103,17 +103,18 @@ spec:
                 - postgres
                 - -d
                 - smartfactory
-            initialDelaySeconds: 5
-            periodSeconds: 5
-            timeoutSeconds: 3
-            failureThreshold: 3
+            initialDelaySeconds: 30    # 5 → 30 (더 오래 기다림)
+            periodSeconds: 15          # 5 → 15 (덜 자주 체크)
+            timeoutSeconds: 5          # 그대로
+            failureThreshold: 6        # 3 → 6 (더 관대하게)
+          # 🎯 최적화된 리소스 설정
           resources:
             requests:
-              memory: "512Mi"
-              cpu: "250m"
+              memory: "128Mi"          # 512Mi → 128Mi (75% 감소)
+              cpu: "50m"               # 250m → 50m (80% 감소)
             limits:
-              memory: "1Gi"
-              cpu: "500m"
+              memory: "256Mi"          # 1Gi → 256Mi (75% 감소)
+              cpu: "200m"              # 500m → 200m (60% 감소)
       volumes:
         - name: postgres-init-script
           configMap:
