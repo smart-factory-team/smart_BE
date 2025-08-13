@@ -2,12 +2,26 @@ server:
   port: 8088
   forward-headers-strategy: framework
 
+# Spring Security 비활성화
+spring:
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
+      - org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
+  security:
+    user:
+      password: none # Security 비활성화
+
 ---
 
 spring:
   config:
     activate:
       on-profile: default
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
+      - org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
   cloud:
     gateway:
       routes:
@@ -30,11 +44,11 @@ spring:
         - id: chatbot
           uri: http://localhost:8086
           predicates:
-            - Path=/agentSessions/**, /issues/**,
-        - id: assemblyprocessmonitoring
+            - Path=/agentSessions/**, /issues/**
+        - id: paintingprocessmonitoring
           uri: http://localhost:8087
           predicates:
-            - Path=/paintingSurfaceDefectDetectionLogs/**, /paintingProcessEquipmentDefectDetectionLogs/**,
+            - Path=/paintingSurfaceDefectDetectionLogs/**, /paintingProcessEquipmentDefectDetectionLogs/**
         - id: assemblyprocessmonitoring
           uri: http://localhost:8088
           predicates:
@@ -61,6 +75,10 @@ spring:
   config:
     activate:
       on-profile: docker
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
+      - org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
   cloud:
     gateway:
       routes:
@@ -83,11 +101,11 @@ spring:
         - id: chatbot
           uri: http://chatbot:8080
           predicates:
-            - Path=/agentSessions/**, /issues/**,
+            - Path=/agentSessions/**, /issues/**
         - id: paintingprocessmonitoring
           uri: http://paintingprocessmonitoring:8080
           predicates:
-            - Path=/paintingSurfaceDefectDetectionLogs/**, /paintingProcessEquipmentDefectDetectionLogs/**,
+            - Path=/paintingSurfaceDefectDetectionLogs/**, /paintingProcessEquipmentDefectDetectionLogs/**
         - id: assemblyprocessmonitoring
           uri: http://assemblyprocessmonitoring:8080
           predicates:
@@ -114,6 +132,10 @@ spring:
   config:
     activate:
       on-profile: kubernetes
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
+      - org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
   cloud:
     gateway:
       httpclient:
@@ -141,6 +163,10 @@ spring:
           uri: http://chatbot.smart-be.svc.cluster.local:8080
           predicates:
             - Path=/agentSessions/**, /issues/**
+        - id: paintingprocessmonitoring
+          uri: http://paintingprocessmonitoring.smart-be.svc.cluster.local:8080
+          predicates:
+            - Path=/paintingSurfaceDefectDetectionLogs/**, /paintingProcessEquipmentDefectDetectionLogs/**
         - id: assemblyprocessmonitoring
           uri: http://assemblyprocessmonitoring.smart-be.svc.cluster.local:8080
           predicates:
