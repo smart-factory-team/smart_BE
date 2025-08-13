@@ -31,10 +31,10 @@ spring:
       max-lifetime: 1200000
       auto-commit: false
 
-  # JPA 설정
+  # JPA 설정 - 스키마 문제 해결을 위해 create로 변경
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: create  # update에서 create로 변경
       naming:
         physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
         implicit-strategy: org.hibernate.boot.model.naming.ImplicitNamingStrategyLegacyHbmImpl
@@ -58,6 +58,8 @@ spring:
 
   # Kafka 설정 (로컬) - Spring Cloud Stream 4.x 방식
   cloud:
+    function:
+      definition: eventIn  # 최상위 레벨에서 명시적으로 정의
     stream:
       # 함수형 바인딩 설정 (핵심 추가!)
       function:
@@ -81,7 +83,7 @@ spring:
       bindings:
         # 함수형 바인딩 - eventIn 함수와 연결
         eventIn-in-0: # 패턴: {함수명}-in-{인덱스}
-          destination: carsmartfactory
+          destination: event-out  # usermanagement가 실제 발행하는 토픽
           group: approvalmanagement
           contentType: application/json
           consumer:
@@ -89,7 +91,7 @@ spring:
             back-off-initial-interval: 1000
         # 출력용 (필요시)
         eventOut-out-0: # 패턴: {함수명}-out-{인덱스}
-          destination: carsmartfactory
+          destination: event-out  # 통일
           contentType: application/json
           producer:
             partition-count: 3
@@ -112,10 +114,11 @@ logging:
     carsmartfactory: DEBUG
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
-    org.springframework.cloud: INFO
+    org.springframework.cloud: DEBUG
     org.springframework.security: DEBUG
     org.springframework.web: DEBUG
     org.springframework.cloud.stream: DEBUG  # Stream 디버깅 추가
+    org.springframework.cloud.function: DEBUG  # Function 디버깅 추가
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
     file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
@@ -177,6 +180,8 @@ spring:
 
   # Kafka 설정 (Docker) - Spring Cloud Stream 4.x 방식
   cloud:
+    function:
+      definition: eventIn
     stream:
       # 함수형 바인딩 설정
       function:
@@ -196,11 +201,11 @@ spring:
       bindings:
         # 함수형 바인딩
         eventIn-in-0:
-          destination: carsmartfactory
+          destination: event-out
           group: approvalmanagement
           contentType: application/json
         eventOut-out-0:
-          destination: carsmartfactory
+          destination: event-out
           contentType: application/json
 
 # 서버 포트 (Docker 내부)
@@ -254,6 +259,8 @@ spring:
 
   # Kafka 설정 (Azure) - Spring Cloud Stream 4.x 방식
   cloud:
+    function:
+      definition: eventIn
     stream:
       # 함수형 바인딩 설정
       function:
@@ -272,11 +279,11 @@ spring:
       bindings:
         # 함수형 바인딩
         eventIn-in-0:
-          destination: carsmartfactory
+          destination: event-out
           group: approvalmanagement
           contentType: application/json
         eventOut-out-0:
-          destination: carsmartfactory
+          destination: event-out
           contentType: application/json
 
 # 서버 설정
