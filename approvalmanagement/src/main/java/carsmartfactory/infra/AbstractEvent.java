@@ -11,7 +11,6 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.MimeTypeUtils;
 
-//<<< Clean Arch / Outbound Adaptor
 public class AbstractEvent {
 
     String eventType;
@@ -28,16 +27,15 @@ public class AbstractEvent {
     }
 
     public void publish() {
-        /**
-         * Spring Cloud Stream 4.x 방식 - StreamBridge 사용
-         */
+        System.out.println("##### Attempting to publish event: " + getEventType() + " #####");
+
         try {
             StreamBridge streamBridge = ApprovalmanagementApplication.applicationContext.getBean(
                     StreamBridge.class
             );
 
-            streamBridge.send(
-                    "eventOut-out-0", // application.yml의 바인딩명과 일치
+            boolean sent = streamBridge.send(
+                    "eventOut-out-0",
                     MessageBuilder
                             .withPayload(this)
                             .setHeader(
@@ -47,9 +45,18 @@ public class AbstractEvent {
                             .setHeader("type", getEventType())
                             .build()
             );
+
+            if (sent) {
+                System.out.println("##### Event published successfully to Kafka: " + getEventType() + " #####");
+                System.out.println("##### Event payload: " + this.toJson() + " #####");
+            } else {
+                System.err.println("##### Failed to publish event to Kafka: " + getEventType() + " #####");
+                throw new RuntimeException("Failed to publish event to Kafka: " + getEventType());
+            }
+
         } catch (Exception e) {
-            System.err.println("##### Error publishing event: " + e.getMessage() + " #####");
-            e.printStackTrace();
+            System.err.println("##### Error publishing event: " + getEventType() + " - " + e.getMessage() + " #####");
+            throw new RuntimeException("Failed to publish event: " + getEventType(), e);
         }
     }
 
@@ -97,4 +104,3 @@ public class AbstractEvent {
         return json;
     }
 }
-//>>> Clean Arch / Outbound Adaptor
