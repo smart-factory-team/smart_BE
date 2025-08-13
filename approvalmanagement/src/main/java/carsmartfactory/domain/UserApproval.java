@@ -10,7 +10,8 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import javax.persistence.*;
+// javax → jakarta 패키지 변경
+import jakarta.persistence.*;
 import lombok.Data;
 
 @Entity
@@ -37,24 +38,24 @@ public class UserApproval {
     @PostPersist
     public void onPostPersist() {
         UserRegistrationApproved userRegistrationApproved = new UserRegistrationApproved(
-            this
+                this
         );
         userRegistrationApproved.publishAfterCommit();
 
         UserRegistrationRejected userRegistrationRejected = new UserRegistrationRejected(
-            this
+                this
         );
         userRegistrationRejected.publishAfterCommit();
 
         ApprovalRequestRegistered approvalRequestRegistered = new ApprovalRequestRegistered(
-            this
+                this
         );
         approvalRequestRegistered.publishAfterCommit();
     }
 
     public static UserApprovalRepository repository() {
         UserApprovalRepository userApprovalRepository = ApprovalmanagementApplication.applicationContext.getBean(
-            UserApprovalRepository.class
+                UserApprovalRepository.class
         );
         return userApprovalRepository;
     }
@@ -63,27 +64,27 @@ public class UserApproval {
     public static void approveUserRegistration(UserRegistered userRegistered) {
         //implement business logic here:
 
-        /** Example 1:  new item 
-        UserApproval userApproval = new UserApproval();
-        repository().save(userApproval);
+        /** Example 1:  new item
+         UserApproval userApproval = new UserApproval();
+         repository().save(userApproval);
 
-        ApprovalRequestRegistered approvalRequestRegistered = new ApprovalRequestRegistered(userApproval);
-        approvalRequestRegistered.publishAfterCommit();
-        */
+         ApprovalRequestRegistered approvalRequestRegistered = new ApprovalRequestRegistered(userApproval);
+         approvalRequestRegistered.publishAfterCommit();
+         */
 
         /** Example 2:  finding and process
-        
 
-        repository().findById(userRegistered.get???()).ifPresent(userApproval->{
-            
-            userApproval // do something
-            repository().save(userApproval);
 
-            ApprovalRequestRegistered approvalRequestRegistered = new ApprovalRequestRegistered(userApproval);
-            approvalRequestRegistered.publishAfterCommit();
+         repository().findById(userRegistered.get???()).ifPresent(userApproval->{
+
+         userApproval // do something
+         repository().save(userApproval);
+
+         ApprovalRequestRegistered approvalRequestRegistered = new ApprovalRequestRegistered(userApproval);
+         approvalRequestRegistered.publishAfterCommit();
 
          });
-        */
+         */
 
     }
     //>>> Clean Arch / Port Method
