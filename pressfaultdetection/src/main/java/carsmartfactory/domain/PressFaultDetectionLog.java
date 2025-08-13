@@ -9,7 +9,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import javax.persistence.*;
+import jakarta.persistence.*;
 import lombok.Data;
 
 @Entity
@@ -39,14 +39,14 @@ public class PressFaultDetectionLog {
     @PostPersist
     public void onPostPersist() {
         PressFaultDetectionSaved pressFaultDetectionSaved = new PressFaultDetectionSaved(
-            this
+                this
         );
         pressFaultDetectionSaved.publishAfterCommit();
     }
 
     public static PressFaultDetectionLogRepository repository() {
         PressFaultDetectionLogRepository pressFaultDetectionLogRepository = PressfaultdetectionApplication.applicationContext.getBean(
-            PressFaultDetectionLogRepository.class
+                PressFaultDetectionLogRepository.class
         );
         return pressFaultDetectionLogRepository;
     }
@@ -56,26 +56,26 @@ public class PressFaultDetectionLog {
         //implement business logic here:
 
         /** Example 1:  new item 
-        PressFaultDetectionLog pressFaultDetectionLog = new PressFaultDetectionLog();
-        repository().save(pressFaultDetectionLog);
+         PressFaultDetectionLog pressFaultDetectionLog = new PressFaultDetectionLog();
+         repository().save(pressFaultDetectionLog);
 
-        IssueSolved issueSolved = new IssueSolved(pressFaultDetectionLog);
-        issueSolved.publishAfterCommit();
-        */
+         IssueSolved issueSolved = new IssueSolved(pressFaultDetectionLog);
+         issueSolved.publishAfterCommit();
+         */
 
         /** Example 2:  finding and process
-        
 
-        repository().findById(issueSolved.get???()).ifPresent(pressFaultDetectionLog->{
-            
-            pressFaultDetectionLog // do something
-            repository().save(pressFaultDetectionLog);
 
-            IssueSolved issueSolved = new IssueSolved(pressFaultDetectionLog);
-            issueSolved.publishAfterCommit();
+         repository().findById(issueSolved.get???()).ifPresent(pressFaultDetectionLog->{
+
+         pressFaultDetectionLog // do something
+         repository().save(pressFaultDetectionLog);
+
+         IssueSolved issueSolved = new IssueSolved(pressFaultDetectionLog);
+         issueSolved.publishAfterCommit();
 
          });
-        */
+         */
 
     }
     //>>> Clean Arch / Port Method
