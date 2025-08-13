@@ -9,7 +9,8 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import javax.persistence.*;
+// javax → jakarta 패키지 변경
+import jakarta.persistence.*;
 import lombok.Data;
 
 @Entity
@@ -47,14 +48,14 @@ public class VehicleAssemblyProcessDefectDetectionLog {
     @PostPersist
     public void onPostPersist() {
         DefectDetectionLogCreated defectDetectionLogCreated = new DefectDetectionLogCreated(
-            this
+                this
         );
         defectDetectionLogCreated.publishAfterCommit();
     }
 
     public static VehicleAssemblyProcessDefectDetectionLogRepository repository() {
         VehicleAssemblyProcessDefectDetectionLogRepository vehicleAssemblyProcessDefectDetectionLogRepository = AssemblyprocessmonitoringApplication.applicationContext.getBean(
-            VehicleAssemblyProcessDefectDetectionLogRepository.class
+                VehicleAssemblyProcessDefectDetectionLogRepository.class
         );
         return vehicleAssemblyProcessDefectDetectionLogRepository;
     }
@@ -63,27 +64,27 @@ public class VehicleAssemblyProcessDefectDetectionLog {
     public static void issueSolvedPolicy(IssueSolved issueSolved) {
         //implement business logic here:
 
-        /** Example 1:  new item 
-        VehicleAssemblyProcessDefectDetectionLog vehicleAssemblyProcessDefectDetectionLog = new VehicleAssemblyProcessDefectDetectionLog();
-        repository().save(vehicleAssemblyProcessDefectDetectionLog);
+        /** Example 1:  new item
+         VehicleAssemblyProcessDefectDetectionLog vehicleAssemblyProcessDefectDetectionLog = new VehicleAssemblyProcessDefectDetectionLog();
+         repository().save(vehicleAssemblyProcessDefectDetectionLog);
 
-        IssueSolved issueSolved = new IssueSolved(vehicleAssemblyProcessDefectDetectionLog);
-        issueSolved.publishAfterCommit();
-        */
+         IssueSolved issueSolved = new IssueSolved(vehicleAssemblyProcessDefectDetectionLog);
+         issueSolved.publishAfterCommit();
+         */
 
         /** Example 2:  finding and process
-        
 
-        repository().findById(issueSolved.get???()).ifPresent(vehicleAssemblyProcessDefectDetectionLog->{
-            
-            vehicleAssemblyProcessDefectDetectionLog // do something
-            repository().save(vehicleAssemblyProcessDefectDetectionLog);
 
-            IssueSolved issueSolved = new IssueSolved(vehicleAssemblyProcessDefectDetectionLog);
-            issueSolved.publishAfterCommit();
+         repository().findById(issueSolved.get???()).ifPresent(vehicleAssemblyProcessDefectDetectionLog->{
+
+         vehicleAssemblyProcessDefectDetectionLog // do something
+         repository().save(vehicleAssemblyProcessDefectDetectionLog);
+
+         IssueSolved issueSolved = new IssueSolved(vehicleAssemblyProcessDefectDetectionLog);
+         issueSolved.publishAfterCommit();
 
          });
-        */
+         */
 
     }
     //>>> Clean Arch / Port Method
