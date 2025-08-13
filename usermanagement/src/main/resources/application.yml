@@ -58,6 +58,8 @@ spring:
 
   # Kafka 설정 (로컬) - Spring Cloud Stream 4.x 방식
   cloud:
+    function:
+      definition: eventIn  # 최상위 레벨에서 명시적으로 정의
     stream:
       # 함수형 바인딩 설정 (핵심 추가!)
       function:
@@ -79,17 +81,17 @@ spring:
                 interval:
                   ms: 1000
       bindings:
-        # 함수형 바인딩 - eventIn 함수와 연결
+        # 함수형 바인딩 - eventIn 함수와 연결 (승인/거절 이벤트 수신용)
         eventIn-in-0: # 패턴: {함수명}-in-{인덱스}
-          destination: carsmartfactory
+          destination: event-out  # approvalmanagement와 동일한 토픽
           group: usermanagement
           contentType: application/json
           consumer:
             max-attempts: 3
             back-off-initial-interval: 1000
-        # 출력용 (필요시)
+        # 출력용 (회원가입 이벤트 발행용)
         eventOut-out-0: # 패턴: {함수명}-out-{인덱스}
-          destination: carsmartfactory
+          destination: event-out  # approvalmanagement와 동일한 토픽
           contentType: application/json
           producer:
             partition-count: 3
@@ -112,10 +114,11 @@ logging:
     carsmartfactory: DEBUG
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
-    org.springframework.cloud: INFO
+    org.springframework.cloud: DEBUG
     org.springframework.security: DEBUG
     org.springframework.web: DEBUG
     org.springframework.cloud.stream: DEBUG  # Stream 디버깅 추가
+    org.springframework.cloud.function: DEBUG  # Function 디버깅 추가
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
     file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
@@ -177,6 +180,8 @@ spring:
 
   # Kafka 설정 (Docker) - Spring Cloud Stream 4.x 방식
   cloud:
+    function:
+      definition: eventIn
     stream:
       # 함수형 바인딩 설정
       function:
@@ -196,11 +201,11 @@ spring:
       bindings:
         # 함수형 바인딩
         eventIn-in-0:
-          destination: carsmartfactory
+          destination: event-out
           group: usermanagement
           contentType: application/json
         eventOut-out-0:
-          destination: carsmartfactory
+          destination: event-out
           contentType: application/json
 
 # 서버 포트 (Docker 내부)
@@ -254,6 +259,8 @@ spring:
 
   # Kafka 설정 (Azure) - Spring Cloud Stream 4.x 방식
   cloud:
+    function:
+      definition: eventIn
     stream:
       # 함수형 바인딩 설정
       function:
@@ -272,11 +279,11 @@ spring:
       bindings:
         # 함수형 바인딩
         eventIn-in-0:
-          destination: carsmartfactory
+          destination: event-out
           group: usermanagement
           contentType: application/json
         eventOut-out-0:
-          destination: carsmartfactory
+          destination: event-out
           contentType: application/json
 
 # 서버 설정

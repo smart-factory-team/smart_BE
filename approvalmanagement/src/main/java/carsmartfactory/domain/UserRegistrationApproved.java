@@ -1,12 +1,10 @@
 package carsmartfactory.domain;
 
-import carsmartfactory.domain.*;
 import carsmartfactory.infra.AbstractEvent;
-import java.time.LocalDate;
-import java.util.*;
-import lombok.*;
+import java.util.Date;
+import lombok.Data;
+import lombok.ToString;
 
-//<<< DDD / Domain Event
 @Data
 @ToString
 public class UserRegistrationApproved extends AbstractEvent {
@@ -18,13 +16,18 @@ public class UserRegistrationApproved extends AbstractEvent {
     private String department;
     private Date createdAt;
     private UserRole role;
+    private String approvedBy;
+    private Date approvedAt;
+    private String approvalReason;
 
     public UserRegistrationApproved(UserApproval aggregate) {
         super(aggregate);
+        this.approvedBy = aggregate.getApprovedBy();
+        this.approvedAt = aggregate.getApprovedAt();
+        this.approvalReason = aggregate.getApprovalReason();
     }
 
     public UserRegistrationApproved() {
         super();
     }
 }
-//>>> DDD / Domain Event
