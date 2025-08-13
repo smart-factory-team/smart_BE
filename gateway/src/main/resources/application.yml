@@ -30,11 +30,11 @@ spring:
         - id: chatbot
           uri: http://localhost:8086
           predicates:
-            - Path=/agentSessions/**, /issues/**, 
+            - Path=/agentSessions/**, /issues/**,
         - id: assemblyprocessmonitoring
           uri: http://localhost:8087
           predicates:
-            - Path=/paintingSurfaceDefectDetectionLogs/**, /paintingProcessEquipmentDefectDetectionLogs/**, 
+            - Path=/paintingSurfaceDefectDetectionLogs/**, /paintingProcessEquipmentDefectDetectionLogs/**,
         - id: assemblyprocessmonitoring
           uri: http://localhost:8088
           predicates:
@@ -50,9 +50,9 @@ spring:
       globalcors:
         corsConfigurations:
           '[/**]':
-            allowedOrigins: ["*"]
-            allowedMethods: ["*"]
-            allowedHeaders: ["*"]
+            allowedOrigins: [ "*" ]
+            allowedMethods: [ "*" ]
+            allowedHeaders: [ "*" ]
             allowCredentials: false
 
 ---
@@ -83,11 +83,11 @@ spring:
         - id: chatbot
           uri: http://chatbot:8080
           predicates:
-            - Path=/agentSessions/**, /issues/**, 
+            - Path=/agentSessions/**, /issues/**,
         - id: paintingprocessmonitoring
           uri: http://paintingprocessmonitoring:8080
           predicates:
-            - Path=/paintingSurfaceDefectDetectionLogs/**, /paintingProcessEquipmentDefectDetectionLogs/**, 
+            - Path=/paintingSurfaceDefectDetectionLogs/**, /paintingProcessEquipmentDefectDetectionLogs/**,
         - id: assemblyprocessmonitoring
           uri: http://assemblyprocessmonitoring:8080
           predicates:
@@ -103,9 +103,9 @@ spring:
       globalcors:
         corsConfigurations:
           '[/**]':
-            allowedOrigins: ["*"]
-            allowedMethods: ["*"]
-            allowedHeaders: ["*"]
+            allowedOrigins: [ "*" ]
+            allowedMethods: [ "*" ]
+            allowedHeaders: [ "*" ]
             allowCredentials: false
 
 ---
@@ -122,31 +122,31 @@ spring:
       routes:
         # ===== Spring Boot Microservices =====
         - id: usermanagement
-          uri: http://usermanagement:8080
+          uri: http://usermanagement.smart-be.svc.cluster.local:8080
           predicates:
             - Path=/userRegisterations/**, /users/**
         - id: report
-          uri: http://report:8080
+          uri: http://report.smart-be.svc.cluster.local:8080
           predicates:
             - Path=/posts/**, /comments/**, /reports/**
         - id: approvalmanagement
-          uri: http://approvalmanagement:8080
+          uri: http://approvalmanagement.smart-be.svc.cluster.local:8080
           predicates:
             - Path=/userApprovals/**
         - id: pressfaultdetection
-          uri: http://pressfaultdetection:8080
+          uri: http://pressfaultdetection.smart-be.svc.cluster.local:8080
           predicates:
             - Path=/pressDefectDetectionLogs/**, /pressFaultDetectionLogs/**
         - id: chatbot
-          uri: http://chatbot:8080
+          uri: http://chatbot.smart-be.svc.cluster.local:8080
           predicates:
             - Path=/agentSessions/**, /issues/**
         - id: assemblyprocessmonitoring
-          uri: http://assemblyprocessmonitoring:8080
+          uri: http://assemblyprocessmonitoring.smart-be.svc.cluster.local:8080
           predicates:
             - Path=/vehicleAssemblyProcessDefectDetectionLogs/**
         - id: weldingprocessmonitoring
-          uri: http://weldingprocessmonitoring:8080
+          uri: http://weldingprocessmonitoring.smart-be.svc.cluster.local:8080
           predicates:
             - Path=/weldingMachineDefectDetectionLogs/**
 
@@ -263,7 +263,7 @@ spring:
       globalcors:
         corsConfigurations:
           '[/**]':
-            allowedOrigins: ["*"]
-            allowedMethods: ["*"]
-            allowedHeaders: ["*"]
+            allowedOrigins: [ "*" ]
+            allowedMethods: [ "*" ]
+            allowedHeaders: [ "*" ]
             allowCredentials: false
