@@ -1,15 +1,14 @@
 package carsmartfactory.infra;
 
-import carsmartfactory.config.kafka.KafkaProcessor;
 import carsmartfactory.domain.*;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import javax.naming.NameParser;
-import javax.naming.NameParser;
-import javax.transaction.Transactional;
+// javax → jakarta 변경
+import jakarta.transaction.Transactional;
+import java.util.function.Consumer;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cloud.stream.annotation.StreamListener;
-import org.springframework.messaging.handler.annotation.Payload;
+import org.springframework.context.annotation.Bean;
+import org.springframework.messaging.Message;
 import org.springframework.stereotype.Service;
 
 //<<< Clean Arch / Inbound Adaptor
@@ -23,39 +22,58 @@ public class PolicyHandler {
     @Autowired
     PressFaultDetectionLogRepository pressFaultDetectionLogRepository;
 
-    @StreamListener(KafkaProcessor.INPUT)
-    public void whatever(@Payload String eventString) {}
+    /**
+     * Kafka 'carsmartfactory' 토픽에서 들어오는 모든 이벤트 처리 Spring Cloud Stream 4.x 함수형 바인딩 방식 application.yml:
+     * spring.cloud.stream.bindings.eventIn-in-0
+     */
+    @Bean
+    public Consumer<Message<String>> eventIn() {
+        return message -> {
+            try {
+                String payload = message.getPayload();
+                String eventType = (String) message.getHeaders().get("type"); // 'type' 헤더 사용
 
-    @StreamListener(
-        value = KafkaProcessor.INPUT,
-        condition = "headers['type']=='IssueSolved'"
-    )
-    public void wheneverIssueSolved_IssueSolvedPolicy(
-        @Payload IssueSolved issueSolved
-    ) {
-        IssueSolved event = issueSolved;
-        System.out.println(
-            "\n\n##### listener IssueSolvedPolicy : " + issueSolved + "\n\n"
-        );
+                System.out.println("\n\n##### Received Event: " + eventType + " #####");
+                System.out.println("##### Payload: " + payload + " #####\n\n");
 
-        // Sample Logic //
-        PressFaultDetectionLog.issueSolvedPolicy(event);
+                ObjectMapper objectMapper = new ObjectMapper();
+                objectMapper.configure(
+                        DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false
+                );
+
+                // 이벤트 타입에 따른 분기 처리 (기존 로직 유지)
+                if ("IssueSolved".equals(eventType)) {
+                    handleIssueSolved(payload, objectMapper);
+                } else {
+                    System.out.println("##### Unknown event type: " + eventType + " #####");
+                }
+
+            } catch (Exception e) {
+                System.err.println("##### Error processing event: " + e.getMessage() + " #####");
+                e.printStackTrace();
+            }
+        };
     }
 
-    @StreamListener(
-        value = KafkaProcessor.INPUT,
-        condition = "headers['type']=='IssueSolved'"
-    )
-    public void wheneverIssueSolved_IssueSolvedPolicy(
-        @Payload IssueSolved issueSolved
-    ) {
-        IssueSolved event = issueSolved;
-        System.out.println(
-            "\n\n##### listener IssueSolvedPolicy : " + issueSolved + "\n\n"
-        );
+    /**
+     * IssueSolved 이벤트 처리 (기존 두 개의 리스너 로직 통합)
+     */
+    private void handleIssueSolved(String payload, ObjectMapper objectMapper) {
+        try {
+            IssueSolved event = objectMapper.readValue(payload, IssueSolved.class);
 
-        // Sample Logic //
-        PressDefectDetectionLog.issueSolvedPolicy(event);
+            // PressFaultDetectionLog 정책 실행
+            System.out.println("\n\n##### listener IssueSolvedPolicy (PressFault) : " + event + "\n\n");
+            PressFaultDetectionLog.issueSolvedPolicy(event);
+
+            // PressDefectDetectionLog 정책 실행
+            System.out.println("\n\n##### listener IssueSolvedPolicy (PressDefect) : " + event + "\n\n");
+            PressDefectDetectionLog.issueSolvedPolicy(event);
+
+        } catch (Exception e) {
+            System.err.println("##### Error handling IssueSolved: " + e.getMessage() + " #####");
+            e.printStackTrace();
+        }
     }
 }
 //>>> Clean Arch / Inbound Adaptor
