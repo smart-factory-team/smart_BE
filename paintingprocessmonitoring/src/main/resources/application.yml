@@ -16,6 +16,9 @@ spring:
         implicit_naming_strategy: org.hibernate.boot.model.naming.ImplicitNamingStrategyComponentPathImpl
   cloud:
     stream:
+      # 함수형 바인딩 설정 (핵심 추가!)
+      function:
+        definition: eventIn  # PolicyHandler의 @Bean 메서드명과 일치
       kafka:
         binder:
           brokers: localhost:9092
@@ -28,23 +31,23 @@ spring:
                 value:
                   serde: org.apache.kafka.common.serialization.Serdes$StringSerde
       bindings:
-        event-in:
+        # 함수형 바인딩 - eventIn 함수와 연결
+        eventIn-in-0: # 패턴: {함수명}-in-{인덱스}
           group: paintingprocessmonitoring
-#<<< EDA / Topic Name
           destination: carsmartfactory
-#>>> EDA / Topic Name
           contentType: application/json
-        event-out:
-#<<< EDA / Topic Name
+          consumer:
+            max-attempts: 3
+            back-off-initial-interval: 1000
+        # 출력용 (필요시)
+        eventOut-out-0: # 패턴: {함수명}-out-{인덱스}
           destination: carsmartfactory
-#>>> EDA / Topic Name
           contentType: application/json
 
 logging:
   level:
     org.hibernate.type: trace
     org.springframework.cloud: debug
-
 
 server:
   port: 8087
@@ -61,6 +64,9 @@ spring:
         implicit_naming_strategy: org.hibernate.boot.model.naming.ImplicitNamingStrategyComponentPathImpl
   cloud:
     stream:
+      # 함수형 바인딩 설정
+      function:
+        definition: eventIn
       kafka:
         binder:
           brokers: my-kafka:9092
@@ -73,12 +79,11 @@ spring:
                 value:
                   serde: org.apache.kafka.common.serialization.Serdes$StringSerde
       bindings:
-        event-in:
+        # 함수형 바인딩
+        eventIn-in-0:
           group: paintingprocessmonitoring
           destination: carsmartfactory
           contentType: application/json
-        event-out:
+        eventOut-out-0:
           destination: carsmartfactory
           contentType: application/json
-
-
