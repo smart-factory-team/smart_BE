@@ -150,7 +150,7 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
           distribution: 'temurin'
 
-      - name: Cache Maven dependencies
+      - name: Cache Maven dependenQcies
         uses: actions/cache@v3
         with:
           path: ~/.m2
@@ -733,9 +733,17 @@ jobs:
           # 2) PostgreSQL 배포 (명시적으로 네임스페이스 지정)
           kubectl apply -n smart-be -f kubernetes/postgres-statefulset.yml
           
-          # 3) PostgreSQL 준비 대기
+          # 3) Kafka 배포 (새로 추가!)
+          echo "🚀 Deploying Kafka..."
+          kubectl apply -n smart-be -f kubernetes/kafka-deployment.yml
+          
+          # 4) PostgreSQL 준비 대기
           echo "⏳ Waiting for PostgreSQL to be ready..."
           kubectl wait --for=condition=Ready pod -l app=postgres -n smart-be --timeout=300s
+          
+          # 5) Kafka 준비 대기
+          echo "⏳ Waiting for Kafka to be ready..."
+          kubectl wait --for=condition=Ready pod -l app=kafka -n smart-be --timeout=300s
           
           echo "✅ Infrastructure deployment completed!"
 
