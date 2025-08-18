@@ -21,6 +21,7 @@
         <spring-cloud.version>2023.0.1</spring-cloud.version>
         <spring-cloud-stream.version>4.1.0</spring-cloud-stream.version>
         <cucumber.version>7.15.0</cucumber.version>
+        <hypersistence.version>3.10.1</hypersistence.version>
     </properties>
 
     <dependencies>
@@ -92,6 +93,13 @@
             <groupId>org.mapstruct</groupId>
             <artifactId>mapstruct</artifactId>
             <version>1.5.5.Final</version>
+        </dependency>
+
+        <!-- Hypersistence Utils for JSONB -->
+        <dependency>
+            <groupId>io.hypersistence</groupId>
+            <artifactId>hypersistence-utils-hibernate-63</artifactId>
+            <version>3.10.1</version>
         </dependency>
 
         <!-- Test Dependencies -->
