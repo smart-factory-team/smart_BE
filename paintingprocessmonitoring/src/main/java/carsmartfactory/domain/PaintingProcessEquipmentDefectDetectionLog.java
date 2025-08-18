@@ -19,10 +19,10 @@ import lombok.Data;
 public class PaintingProcessEquipmentDefectDetectionLog {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    private String id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-    private Long machineId;
+    private String machineId;
 
     private Date timeStamp;
 
@@ -30,7 +30,7 @@ public class PaintingProcessEquipmentDefectDetectionLog {
 
     private Float voltage;
 
-    private Float ampere;
+    private Float current;
 
     private Float temper;
 
