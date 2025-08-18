@@ -36,7 +36,7 @@ spring:
         - id: approvalmanagement
           uri: http://localhost:8084
           predicates:
-            - Path=/userApprovals/**
+            - Path=/userApprovals/**, /api/approvals/**
         - id: pressfaultdetection
           uri: http://localhost:8085
           predicates:
@@ -61,13 +61,14 @@ spring:
           uri: http://localhost:8080
           predicates:
             - Path=/**
-      globalcors:
-        corsConfigurations:
-          '[/**]':
-            allowedOrigins: [ "*" ]
-            allowedMethods: [ "*" ]
-            allowedHeaders: [ "*" ]
-            allowCredentials: false
+      # CORS 설정 완전 제거 - Java SecurityConfig에서 처리
+      # globalcors:
+      #   corsConfigurations:
+      #     '[/**]':
+      #       allowedOrigins: [ "http://localhost:3000" ]
+      #       allowedMethods: [ "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS" ]
+      #       allowedHeaders: [ "*" ]
+      #       allowCredentials: false
 
 ---
 
@@ -118,13 +119,14 @@ spring:
           uri: http://frontend:8080
           predicates:
             - Path=/**
-      globalcors:
-        corsConfigurations:
-          '[/**]':
-            allowedOrigins: [ "*" ]
-            allowedMethods: [ "*" ]
-            allowedHeaders: [ "*" ]
-            allowCredentials: false
+      # CORS 설정 제거 - Java SecurityConfig에서 처리
+      # globalcors:
+      #   corsConfigurations:
+      #     '[/**]':
+      #       allowedOrigins: [ "http://localhost:3000" ]
+      #       allowedMethods: [ "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS" ]
+      #       allowedHeaders: [ "*" ]
+      #       allowCredentials: false
 
 ---
 
@@ -286,10 +288,11 @@ spring:
           uri: http://frontend:8080
           predicates:
             - Path=/**
-      globalcors:
-        corsConfigurations:
-          '[/**]':
-            allowedOrigins: [ "*" ]
-            allowedMethods: [ "*" ]
-            allowedHeaders: [ "*" ]
-            allowCredentials: false
+      # CORS 설정 제거 - Java SecurityConfig에서 처리
+      # globalcors:
+      #   corsConfigurations:
+      #     '[/**]':
+      #       allowedOrigins: [ "*" ]
+      #       allowedMethods: [ "*" ]
+      #       allowedHeaders: [ "*" ]
+      #       allowCredentials: false
