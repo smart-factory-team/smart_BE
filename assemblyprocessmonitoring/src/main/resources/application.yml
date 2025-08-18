@@ -30,14 +30,14 @@ spring:
       bindings:
         event-in:
           group: assemblyprocessmonitoring
-#<<< EDA / Topic Name
+          #<<< EDA / Topic Name
           destination: carsmartfactory
-#>>> EDA / Topic Name
+          #>>> EDA / Topic Name
           contentType: application/json
         event-out:
-#<<< EDA / Topic Name
+          #<<< EDA / Topic Name
           destination: carsmartfactory
-#>>> EDA / Topic Name
+          #>>> EDA / Topic Name
           contentType: application/json
 
 logging:
@@ -45,9 +45,8 @@ logging:
     org.hibernate.type: trace
     org.springframework.cloud: debug
 
-
 server:
-  port: 8087
+  port: 8090  # 8087 → 8090 변경 (Gateway와 포트 충돌 해결)
 
 ---
 
@@ -80,5 +79,3 @@ spring:
         event-out:
           destination: carsmartfactory
           contentType: application/json
-
-
