@@ -6,7 +6,9 @@ import carsmartfactory.domain.PressFaultDetectionLogRepository;
 import carsmartfactory.infra.dto.PressFaultDataDto;
 import carsmartfactory.infra.dto.PressFaultPredictionResponseDto;
 
+import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
@@ -64,7 +66,9 @@ public class PressFaultDetectionService {
                 logEntity.setAi2Current(objectMapper.writeValueAsString(event.getAI2_Current()));
                 
                 logEntity.setMachineId(1L);
-                logEntity.setIssue(prediction.getPrediction());
+                // attribute_errors 분석해서 issue 형식 생성
+                String issueCode = generateIssueCode(prediction.getAttribute_errors());
+                logEntity.setIssue(issueCode);
                 logEntity.setIsSolved(false); // 초기 상태
 
                 // 리포지토리를 통해 엔티티 저장 -> @PostPersist가 이벤트 발행을 트리거
@@ -81,5 +85,46 @@ public class PressFaultDetectionService {
         } else {
             System.out.println("=== 정상 상태 ===");
         }
+    }
+
+    private String generateIssueCode(Map<String, Double> attributeErrors) {
+        
+        // 현재 시간을 DATETIME 형식으로 생성
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMddHHmmss");
+        String datetime = dateFormat.format(new Date());
+        
+        if (attributeErrors == null || attributeErrors.isEmpty()) {
+            return "PRESS-COMPLEX-ANOMALY-" + datetime;
+        }
+        
+        // 가장 큰 에러 값을 가진 속성 찾기
+        String maxErrorAttribute = null;
+        double maxError = -1.0;
+        
+        for (Map.Entry<String, Double> entry : attributeErrors.entrySet()) {
+            if (entry.getValue() > maxError) {
+                maxError = entry.getValue();
+                maxErrorAttribute = entry.getKey();
+            }
+        }
+        
+        System.out.println("=== 최대 에러 속성: " + maxErrorAttribute + " (값: " + maxError + ") ===");
+        
+        // 속성명에 따라 분류
+        if (maxErrorAttribute != null) {
+            if (maxErrorAttribute.toLowerCase().contains("ai0") || 
+                maxErrorAttribute.toLowerCase().contains("vib") && maxErrorAttribute.contains("0")) {
+                return "PRESS-VIB1-ANOMALY-" + datetime;
+            } else if (maxErrorAttribute.toLowerCase().contains("ai1") || 
+                       maxErrorAttribute.toLowerCase().contains("vib") && maxErrorAttribute.contains("1")) {
+                return "PRESS-VIB2-ANOMALY-" + datetime;
+            } else if (maxErrorAttribute.toLowerCase().contains("ai2") || 
+                       maxErrorAttribute.toLowerCase().contains("cur")) {
+                return "PRESS-CUR-ANOMALY-" + datetime;
+            }
+        }
+        
+        // 분류되지 않은 경우 복합 이상
+        return "PRESS-COMPLEX-ANOMALY-" + datetime;
     }
 }
