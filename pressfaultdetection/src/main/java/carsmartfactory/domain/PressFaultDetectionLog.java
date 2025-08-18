@@ -11,6 +11,10 @@ import java.util.List;
 import java.util.Map;
 import jakarta.persistence.*;
 import lombok.Data;
+import org.hibernate.annotations.GenericGenerator;
+import org.hibernate.annotations.Type;
+
+import io.hypersistence.utils.hibernate.type.json.JsonType;
 
 @Entity
 @Table(name = "PressFaultDetectionLog_table")
@@ -19,18 +23,25 @@ import lombok.Data;
 public class PressFaultDetectionLog {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(generator = "uuid")
+    @GenericGenerator(name = "uuid", strategy = "org.hibernate.id.UUIDGenerator")
     private String id;
 
     private Long machineId;
 
     private Date timeStamp;
 
-    private Float ai0Vibration;
+    @Type(JsonType.class)
+    @Column(columnDefinition = "jsonb")
+    private String ai0Vibration;
 
-    private Float ai1Vibration;
+    @Type(JsonType.class)
+    @Column(columnDefinition = "jsonb")
+    private String ai1Vibration;
 
-    private Float ai2Current;
+    @Type(JsonType.class)
+    @Column(columnDefinition = "jsonb")
+    private String ai2Current;
 
     private String issue;
 

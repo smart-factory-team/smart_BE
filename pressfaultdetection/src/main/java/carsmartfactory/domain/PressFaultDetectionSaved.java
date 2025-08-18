@@ -14,9 +14,9 @@ public class PressFaultDetectionSaved extends AbstractEvent {
     private String id;
     private Long machineId;
     private Date timeStamp;
-    private Float ai0Vibration;
-    private Float ai1Vibration;
-    private Float ai2Current;
+    private String ai0Vibration;
+    private String ai1Vibration;
+    private String ai2Current;
     private String issue;
     private Boolean isSolved;
 
