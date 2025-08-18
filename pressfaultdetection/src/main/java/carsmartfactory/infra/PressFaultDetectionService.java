@@ -1,12 +1,20 @@
 package carsmartfactory.infra;
 
 import carsmartfactory.domain.PressFaultDataReceivedEvent;
+import carsmartfactory.domain.PressFaultDetectionLog;
+import carsmartfactory.domain.PressFaultDetectionLogRepository;
 import carsmartfactory.infra.dto.PressFaultDataDto;
 import carsmartfactory.infra.dto.PressFaultPredictionResponseDto;
+
+import java.util.Date;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
 public class PressFaultDetectionService {
@@ -14,7 +22,14 @@ public class PressFaultDetectionService {
     @Autowired
     private PressFaultModelClient modelClient;
 
+    @Autowired
+    private PressFaultDetectionLogRepository repository;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
     @EventListener
+    @Transactional
     public void handlePressFaultDataReceived(PressFaultDataReceivedEvent event) {
         
         System.out.println("=== 1단계: 이벤트 수신됨 ===");
@@ -31,20 +46,40 @@ public class PressFaultDetectionService {
         requestData.setData_length(event.getData_length());
 
         // FastAPI 모델 서비스 호출
-        try {
-            PressFaultPredictionResponseDto prediction = modelClient.predict(requestData);
+        PressFaultPredictionResponseDto prediction = modelClient.predict(requestData);
+        
+        // 2단계: 고장 여부 판단 및 DB 저장
+        if (prediction != null && prediction.getIs_fault()) {
+            System.out.println("=== 고장 감지: PressFaultDetectionLog 엔티티 저장 ===");
             
-            System.out.println("=== FastAPI 호출 결과 ===");
-            System.out.println("예측 결과: " + prediction.getPrediction());
-            System.out.println("고장 여부: " + prediction.getIs_fault());
-            System.out.println("재구성 오차: " + prediction.getReconstruction_error());
-            System.out.println("속성별 오차: " + prediction.getAttribute_errors());
+            PressFaultDetectionLog logEntity = new PressFaultDetectionLog();
             
-            // TODO: 2단계에서 고장일 경우 이벤트 발행 추가 예정
-            
-        } catch (Exception e) {
-            System.out.println("=== FastAPI 호출 실패 ===");
-            e.printStackTrace();
+            try {
+                // 엔티티 데이터 채우기
+                logEntity.setTimeStamp(new Date()); // 현재 시간
+                
+                // List<Double> to JSON String
+                logEntity.setAi0Vibration(objectMapper.writeValueAsString(event.getAI0_Vibration()));
+                logEntity.setAi1Vibration(objectMapper.writeValueAsString(event.getAI1_Vibration()));
+                logEntity.setAi2Current(objectMapper.writeValueAsString(event.getAI2_Current()));
+                
+                logEntity.setMachineId(1L);
+                logEntity.setIssue(prediction.getPrediction());
+                logEntity.setIsSolved(false); // 초기 상태
+
+                // 리포지토리를 통해 엔티티 저장 -> @PostPersist가 이벤트 발행을 트리거
+                repository.save(logEntity);
+                System.out.println("=== DB 저장 및 이벤트 발행 완료 ===");
+
+            } catch (JsonProcessingException e) {
+                System.err.println("=== JSON 변환 실패 ===");
+                e.printStackTrace();
+            }
+
+        } else if (prediction == null) {
+            System.out.println("=== FastAPI 호출 실패 또는 응답 없음 ===");
+        } else {
+            System.out.println("=== 정상 상태 ===");
         }
     }
 }
