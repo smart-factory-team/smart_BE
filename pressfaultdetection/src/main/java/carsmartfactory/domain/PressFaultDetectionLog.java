@@ -65,6 +65,13 @@ public class PressFaultDetectionLog {
     //<<< Clean Arch / Port Method
     public static void issueSolvedPolicy(IssueSolved issueSolved) {
         //implement business logic here:
+        repository().deleteById(issueSolved.getId());
+        // repository()
+        //     .findById(issueSolved.getId())
+        //     .ifPresent(pressFaultDetectionLog -> {
+        //         pressFaultDetectionLog.setIsSolved(true);
+        //         repository().save(pressFaultDetectionLog);
+        //     });
 
         /** Example 1:  new item 
          PressFaultDetectionLog pressFaultDetectionLog = new PressFaultDetectionLog();
@@ -73,7 +80,7 @@ public class PressFaultDetectionLog {
          IssueSolved issueSolved = new IssueSolved(pressFaultDetectionLog);
          issueSolved.publishAfterCommit();
          */
-
+        // implement business logic here:
         /** Example 2:  finding and process
 
 
