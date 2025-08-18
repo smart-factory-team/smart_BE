@@ -30,14 +30,7 @@ spring:
       bindings:
         event-in:
           group: paintingprocessmonitoring
-#<<< EDA / Topic Name
-          destination: carsmartfactory
-#>>> EDA / Topic Name
-          contentType: application/json
-        event-out:
-#<<< EDA / Topic Name
-          destination: carsmartfactory
-#>>> EDA / Topic Name
+          destination: painting-defect-detected
           contentType: application/json
 
 logging:
@@ -53,7 +46,14 @@ server:
 
 spring:
   profiles: docker
+  datasource:
+    url: jdbc:postgresql://postgres:5432/smartfactory
+    username: postgres
+    password: password
+    driver-class-name: org.postgresql.Driver
   jpa:
+    hibernate:
+      ddl-auto: update
     properties:
       hibernate:
         show_sql: true
@@ -63,7 +63,7 @@ spring:
     stream:
       kafka:
         binder:
-          brokers: my-kafka:9092
+          brokers: kafka:9092
         streams:
           binder:
             configuration:
@@ -75,10 +75,7 @@ spring:
       bindings:
         event-in:
           group: paintingprocessmonitoring
-          destination: carsmartfactory
-          contentType: application/json
-        event-out:
-          destination: carsmartfactory
+          destination: painting-defect-detected
           contentType: application/json
 
 
