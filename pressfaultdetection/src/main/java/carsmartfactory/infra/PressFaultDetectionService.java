@@ -30,6 +30,9 @@ public class PressFaultDetectionService {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    private FrontendNotificationService frontendClient;
+
     @EventListener
     @Transactional
     public void handlePressFaultDataReceived(PressFaultDataReceivedEvent event) {
@@ -50,10 +53,15 @@ public class PressFaultDetectionService {
         // FastAPI 모델 서비스 호출
         PressFaultPredictionResponseDto prediction = modelClient.predict(requestData);
         
+        // 프론트엔드에 상태 전송 (고장/정상 모두)
+        if (prediction != null) {
+            frontendClient.sendFaultStatus(prediction, event);
+        }
+        
         // 2단계: 고장 여부 판단 및 DB 저장
         if (prediction != null && prediction.getIs_fault()) {
             System.out.println("=== 고장 감지: PressFaultDetectionLog 엔티티 저장 ===");
-            
+
             PressFaultDetectionLog logEntity = new PressFaultDetectionLog();
             
             try {
