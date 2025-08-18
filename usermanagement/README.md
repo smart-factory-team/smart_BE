@@ -1,4 +1,4 @@
-# usermanagement.
+# usermanagement
 
 ## Running in local development environment
 
