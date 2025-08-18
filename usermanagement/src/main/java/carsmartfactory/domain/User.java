@@ -56,26 +56,41 @@ public class User {
     public static void enableUserAccount(
             UserRegistrationApproved userRegistrationApproved
     ) {
-        //implement business logic here:
+        System.out.println(
+                "##### [User] enableUserAccount called for: " + userRegistrationApproved.getEmail() + " #####");
 
-        /** Example 1:  new item
-         User user = new User();
-         repository().save(user);
+        try {
+            // 이미 User 테이블에 존재하는지 확인
+            boolean userExists = repository().existsByEmail(userRegistrationApproved.getEmail());
 
-         */
+            if (userExists) {
+                System.out.println(
+                        "##### [User] User already exists in User table: " + userRegistrationApproved.getEmail()
+                                + " #####");
+                return;
+            }
 
-        /** Example 2:  finding and process
+            // 승인된 사용자를 User 테이블에 추가
+            User newUser = new User();
+            newUser.setId(userRegistrationApproved.getId());
+            newUser.setEmail(userRegistrationApproved.getEmail());
+            newUser.setPassword(userRegistrationApproved.getPassword());
+            newUser.setName(userRegistrationApproved.getName());
+            newUser.setDepartment(userRegistrationApproved.getDepartment());
+            newUser.setRole(userRegistrationApproved.getRole());
+            newUser.setIsApproved(true);  // 승인된 상태
+            newUser.setCreatedAt(userRegistrationApproved.getCreatedAt());
+            newUser.setUpdatedAt(new java.util.Date());
 
+            // User 테이블에 저장
+            repository().save(newUser);
 
-         repository().findById(userRegistrationApproved.get???()).ifPresent(user->{
+            System.out.println("##### [User] User account enabled successfully: " + newUser.getEmail() + " #####");
 
-         user // do something
-         repository().save(user);
-
-
-         });
-         */
-
+        } catch (Exception e) {
+            System.err.println("##### [User] Error enabling user account: " + e.getMessage() + " #####");
+            e.printStackTrace();
+        }
     }
 
     //>>> Clean Arch / Port Method
@@ -83,26 +98,27 @@ public class User {
     public static void disableUseAccount(
             UserRegistrationRejected userRegistrationRejected
     ) {
-        //implement business logic here:
+        System.out.println(
+                "##### [User] disableUseAccount called for: " + userRegistrationRejected.getEmail() + " #####");
 
-        /** Example 1:  new item
-         User user = new User();
-         repository().save(user);
+        try {
+            // 거절된 사용자는 User 테이블에서 제거 (만약 존재한다면)
+            repository().findByEmail(userRegistrationRejected.getEmail())
+                    .ifPresent(user -> {
+                        repository().delete(user);
+                        System.out.println(
+                                "##### [User] User account disabled and removed: " + user.getEmail() + " #####");
+                    });
 
-         */
+            // 거절된 경우에는 User 테이블에 추가하지 않음
+            System.out.println("##### [User] User registration rejected, account not created: " +
+                    userRegistrationRejected.getEmail() + " reason: " + userRegistrationRejected.getRejectionReason()
+                    + " #####");
 
-        /** Example 2:  finding and process
-
-
-         repository().findById(userRegistrationRejected.get???()).ifPresent(user->{
-
-         user // do something
-         repository().save(user);
-
-
-         });
-         */
-
+        } catch (Exception e) {
+            System.err.println("##### [User] Error disabling user account: " + e.getMessage() + " #####");
+            e.printStackTrace();
+        }
     }
     //>>> Clean Arch / Port Method
 
