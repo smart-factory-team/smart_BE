@@ -38,7 +38,7 @@ spec:
                   key: password
           readinessProbe:
             httpGet:
-              path: '/actuator/health'
+              path: '/actuator/health/readiness'
               port: 8080
             initialDelaySeconds: 30
             timeoutSeconds: 5
@@ -46,7 +46,7 @@ spec:
             failureThreshold: 3
           livenessProbe:
             httpGet:
-              path: '/actuator/health'
+              path: '/actuator/health/liveness'
               port: 8080
             initialDelaySeconds: 60
             timeoutSeconds: 5
@@ -93,7 +93,7 @@ spec:
                   key: password
           readinessProbe:
             httpGet:
-              path: '/actuator/health'
+              path: '/actuator/health/readiness'
               port: 8080
             initialDelaySeconds: 30
             timeoutSeconds: 5
@@ -101,7 +101,7 @@ spec:
             failureThreshold: 3
           livenessProbe:
             httpGet:
-              path: '/actuator/health'
+              path: '/actuator/health/liveness'
               port: 8080
             initialDelaySeconds: 60
             timeoutSeconds: 5
@@ -109,7 +109,6 @@ spec:
             failureThreshold: 3
 
 ---
-
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -149,7 +148,7 @@ spec:
                   key: password
           readinessProbe:
             httpGet:
-              path: '/actuator/health'
+              path: '/actuator/health/readiness'
               port: 8080
             initialDelaySeconds: 30
             timeoutSeconds: 5
@@ -157,7 +156,7 @@ spec:
             failureThreshold: 3
           livenessProbe:
             httpGet:
-              path: '/actuator/health'
+              path: '/actuator/health/liveness'
               port: 8080
             initialDelaySeconds: 60
             timeoutSeconds: 5
@@ -204,7 +203,7 @@ spec:
                   key: password
           readinessProbe:
             httpGet:
-              path: '/actuator/health'
+              path: '/actuator/health/readiness'
               port: 8080
             initialDelaySeconds: 30
             timeoutSeconds: 5
@@ -212,13 +211,12 @@ spec:
             failureThreshold: 3
           livenessProbe:
             httpGet:
-              path: '/actuator/health'
+              path: '/actuator/health/liveness'
               port: 8080
             initialDelaySeconds: 60
             timeoutSeconds: 5
             periodSeconds: 10
             failureThreshold: 3
-
 
 ---
 apiVersion: apps/v1
@@ -260,7 +258,7 @@ spec:
                   key: password
           readinessProbe:
             httpGet:
-              path: '/actuator/health'
+              path: '/actuator/health/readiness'
               port: 8080
             initialDelaySeconds: 30
             timeoutSeconds: 5
@@ -268,7 +266,7 @@ spec:
             failureThreshold: 3
           livenessProbe:
             httpGet:
-              path: '/actuator/health'
+              path: '/actuator/health/liveness'
               port: 8080
             initialDelaySeconds: 60
             timeoutSeconds: 5
@@ -315,7 +313,7 @@ spec:
                   key: password
           readinessProbe:
             httpGet:
-              path: '/actuator/health'
+              path: '/actuator/health/readiness'
               port: 8080
             initialDelaySeconds: 30
             timeoutSeconds: 5
@@ -323,13 +321,12 @@ spec:
             failureThreshold: 3
           livenessProbe:
             httpGet:
-              path: '/actuator/health'
+              path: '/actuator/health/liveness'
               port: 8080
             initialDelaySeconds: 60
             timeoutSeconds: 5
             periodSeconds: 10
             failureThreshold: 3
-
 
 ---
 apiVersion: apps/v1
@@ -371,7 +368,7 @@ spec:
                   key: password
           readinessProbe:
             httpGet:
-              path: '/actuator/health'
+              path: '/actuator/health/readiness'
               port: 8080
             initialDelaySeconds: 30
             timeoutSeconds: 5
@@ -379,13 +376,12 @@ spec:
             failureThreshold: 3
           livenessProbe:
             httpGet:
-              path: '/actuator/health'
+              path: '/actuator/health/liveness'
               port: 8080
             initialDelaySeconds: 60
             timeoutSeconds: 5
             periodSeconds: 10
             failureThreshold: 3
-
 
 ---
 apiVersion: apps/v1
@@ -427,7 +423,7 @@ spec:
                   key: password
           readinessProbe:
             httpGet:
-              path: '/actuator/health'
+              path: '/actuator/health/readiness'
               port: 8080
             initialDelaySeconds: 30
             timeoutSeconds: 5
@@ -435,7 +431,7 @@ spec:
             failureThreshold: 3
           livenessProbe:
             httpGet:
-              path: '/actuator/health'
+              path: '/actuator/health/liveness'
               port: 8080
             initialDelaySeconds: 60
             timeoutSeconds: 5
@@ -443,7 +439,6 @@ spec:
             failureThreshold: 3
 
 ---
-
 apiVersion: v1
 kind: Service
 metadata:
@@ -459,7 +454,6 @@ spec:
     app: usermanagement
 
 ---
-
 apiVersion: v1
 kind: Service
 metadata:
@@ -473,7 +467,6 @@ spec:
       targetPort: 8080
   selector:
     app: report
-
 
 ---
 apiVersion: v1
@@ -491,7 +484,6 @@ spec:
     app: approvalmanagement
 
 ---
-
 apiVersion: v1
 kind: Service
 metadata:
@@ -505,7 +497,6 @@ spec:
       targetPort: 8080
   selector:
     app: pressfaultdetection
-
 
 ---
 apiVersion: v1
@@ -521,6 +512,7 @@ spec:
       targetPort: 8080
   selector:
     app: chatbot
+
 ---
 apiVersion: v1
 kind: Service
@@ -550,9 +542,6 @@ spec:
       targetPort: 8080
   selector:
     app: assemblyprocessmonitoring
-
-
----
 
 ---
 apiVersion: v1
