@@ -1,18 +1,16 @@
 package carsmartfactory.infra;
 
 import carsmartfactory.ApprovalmanagementApplication;
-import carsmartfactory.config.kafka.KafkaProcessor;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.BeanUtils;
-import org.springframework.messaging.MessageChannel;
+import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.messaging.MessageHeaders;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.MimeTypeUtils;
 
-//<<< Clean Arch / Outbound Adaptor
 public class AbstractEvent {
 
     String eventType;
@@ -29,34 +27,47 @@ public class AbstractEvent {
     }
 
     public void publish() {
-        /**
-         * spring streams 방식
-         */
-        KafkaProcessor processor = ApprovalmanagementApplication.applicationContext.getBean(
-            KafkaProcessor.class
-        );
-        MessageChannel outputChannel = processor.outboundTopic();
+        System.out.println("##### Attempting to publish event: " + getEventType() + " #####");
 
-        outputChannel.send(
-            MessageBuilder
-                .withPayload(this)
-                .setHeader(
-                    MessageHeaders.CONTENT_TYPE,
-                    MimeTypeUtils.APPLICATION_JSON
-                )
-                .setHeader("type", getEventType())
-                .build()
-        );
+        try {
+            StreamBridge streamBridge = ApprovalmanagementApplication.applicationContext.getBean(
+                    StreamBridge.class
+            );
+
+            boolean sent = streamBridge.send(
+                    "eventOut-out-0",
+                    MessageBuilder
+                            .withPayload(this)
+                            .setHeader(
+                                    MessageHeaders.CONTENT_TYPE,
+                                    MimeTypeUtils.APPLICATION_JSON
+                            )
+                            .setHeader("type", getEventType())
+                            .build()
+            );
+
+            if (sent) {
+                System.out.println("##### Event published successfully to Kafka: " + getEventType() + " #####");
+                System.out.println("##### Event payload: " + this.toJson() + " #####");
+            } else {
+                System.err.println("##### Failed to publish event to Kafka: " + getEventType() + " #####");
+                throw new RuntimeException("Failed to publish event to Kafka: " + getEventType());
+            }
+
+        } catch (Exception e) {
+            System.err.println("##### Error publishing event: " + getEventType() + " - " + e.getMessage() + " #####");
+            throw new RuntimeException("Failed to publish event: " + getEventType(), e);
+        }
     }
 
     public void publishAfterCommit() {
         TransactionSynchronizationManager.registerSynchronization(
-            new TransactionSynchronization() {
-                @Override
-                public void afterCommit() {
-                    AbstractEvent.this.publish();
+                new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        AbstractEvent.this.publish();
+                    }
                 }
-            }
         );
     }
 
@@ -93,4 +104,3 @@ public class AbstractEvent {
         return json;
     }
 }
-//>>> Clean Arch / Outbound Adaptor
