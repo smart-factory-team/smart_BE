@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import carsmartfactory.domain.PressFaultDataReceivedEvent;
@@ -19,6 +20,7 @@ import carsmartfactory.infra.dto.PressFaultDataDto;
 
 @RestController
 @RequestMapping("/pressFaultDetectionLogs")
+@CrossOrigin(origins = "*")
 public class PressFaultDetectionController {
     // SSE 연결된 클라이언트들 저장
     private final CopyOnWriteArrayList<SseEmitter> emitters = new CopyOnWriteArrayList<>();
