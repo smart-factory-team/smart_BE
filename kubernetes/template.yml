@@ -1,3 +1,11 @@
+# kubernetes/template.yml
+# 공통 변경:
+# - readinessProbe -> /actuator/health/readiness
+# - livenessProbe  -> /actuator/health/liveness
+# - Kafka 부트스트랩 주소 전 서비스 주입:
+#     SPRING_KAFKA_BOOTSTRAP_SERVERS = kafka.smart-be.svc.cluster.local:9092
+#     SPRING_CLOUD_STREAM_KAFKA_BINDER_BROKERS = kafka.smart-be.svc.cluster.local:9092
+
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -27,32 +35,26 @@ spec:
             - name: SPRING_DATASOURCE_URL
               value: "jdbc:postgresql://postgres:5432/usermanagement"
             - name: SPRING_DATASOURCE_USERNAME
-              valueFrom:
-                secretKeyRef:
-                  name: postgres-secret
-                  key: username
+              valueFrom: { secretKeyRef: { name: postgres-secret, key: username } }
             - name: SPRING_DATASOURCE_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: postgres-secret
-                  key: password
+              valueFrom: { secretKeyRef: { name: postgres-secret, key: password } }
+            # Kafka (공통)
+            - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+              value: "kafka.smart-be.svc.cluster.local:9092"
+            - name: SPRING_CLOUD_STREAM_KAFKA_BINDER_BROKERS
+              value: "kafka.smart-be.svc.cluster.local:9092"
           readinessProbe:
-            httpGet:
-              path: '/actuator/health/readiness'
-              port: 8080
+            httpGet: { path: "/actuator/health/readiness", port: 8080 }
             initialDelaySeconds: 30
             timeoutSeconds: 5
             periodSeconds: 10
             failureThreshold: 3
           livenessProbe:
-            httpGet:
-              path: '/actuator/health/liveness'
-              port: 8080
+            httpGet: { path: "/actuator/health/liveness", port: 8080 }
             initialDelaySeconds: 60
             timeoutSeconds: 5
             periodSeconds: 10
             failureThreshold: 3
-
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -82,32 +84,26 @@ spec:
             - name: SPRING_DATASOURCE_URL
               value: "jdbc:postgresql://postgres:5432/report"
             - name: SPRING_DATASOURCE_USERNAME
-              valueFrom:
-                secretKeyRef:
-                  name: postgres-secret
-                  key: username
+              valueFrom: { secretKeyRef: { name: postgres-secret, key: username } }
             - name: SPRING_DATASOURCE_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: postgres-secret
-                  key: password
+              valueFrom: { secretKeyRef: { name: postgres-secret, key: password } }
+            # Kafka
+            - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+              value: "kafka.smart-be.svc.cluster.local:9092"
+            - name: SPRING_CLOUD_STREAM_KAFKA_BINDER_BROKERS
+              value: "kafka.smart-be.svc.cluster.local:9092"
           readinessProbe:
-            httpGet:
-              path: '/actuator/health/readiness'
-              port: 8080
+            httpGet: { path: "/actuator/health/readiness", port: 8080 }
             initialDelaySeconds: 30
             timeoutSeconds: 5
             periodSeconds: 10
             failureThreshold: 3
           livenessProbe:
-            httpGet:
-              path: '/actuator/health/liveness'
-              port: 8080
+            httpGet: { path: "/actuator/health/liveness", port: 8080 }
             initialDelaySeconds: 60
             timeoutSeconds: 5
             periodSeconds: 10
             failureThreshold: 3
-
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -137,32 +133,26 @@ spec:
             - name: SPRING_DATASOURCE_URL
               value: "jdbc:postgresql://postgres:5432/approvalmanagement"
             - name: SPRING_DATASOURCE_USERNAME
-              valueFrom:
-                secretKeyRef:
-                  name: postgres-secret
-                  key: username
+              valueFrom: { secretKeyRef: { name: postgres-secret, key: username } }
             - name: SPRING_DATASOURCE_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: postgres-secret
-                  key: password
+              valueFrom: { secretKeyRef: { name: postgres-secret, key: password } }
+            # Kafka
+            - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+              value: "kafka.smart-be.svc.cluster.local:9092"
+            - name: SPRING_CLOUD_STREAM_KAFKA_BINDER_BROKERS
+              value: "kafka.smart-be.svc.cluster.local:9092"
           readinessProbe:
-            httpGet:
-              path: '/actuator/health/readiness'
-              port: 8080
+            httpGet: { path: "/actuator/health/readiness", port: 8080 }
             initialDelaySeconds: 30
             timeoutSeconds: 5
             periodSeconds: 10
             failureThreshold: 3
           livenessProbe:
-            httpGet:
-              path: '/actuator/health/liveness'
-              port: 8080
+            httpGet: { path: "/actuator/health/liveness", port: 8080 }
             initialDelaySeconds: 60
             timeoutSeconds: 5
             periodSeconds: 10
             failureThreshold: 3
-
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -192,32 +182,26 @@ spec:
             - name: SPRING_DATASOURCE_URL
               value: "jdbc:postgresql://postgres:5432/pressfaultdetection"
             - name: SPRING_DATASOURCE_USERNAME
-              valueFrom:
-                secretKeyRef:
-                  name: postgres-secret
-                  key: username
+              valueFrom: { secretKeyRef: { name: postgres-secret, key: username } }
             - name: SPRING_DATASOURCE_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: postgres-secret
-                  key: password
+              valueFrom: { secretKeyRef: { name: postgres-secret, key: password } }
+            # Kafka
+            - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+              value: "kafka.smart-be.svc.cluster.local:9092"
+            - name: SPRING_CLOUD_STREAM_KAFKA_BINDER_BROKERS
+              value: "kafka.smart-be.svc.cluster.local:9092"
           readinessProbe:
-            httpGet:
-              path: '/actuator/health/readiness'
-              port: 8080
+            httpGet: { path: "/actuator/health/readiness", port: 8080 }
             initialDelaySeconds: 30
             timeoutSeconds: 5
             periodSeconds: 10
             failureThreshold: 3
           livenessProbe:
-            httpGet:
-              path: '/actuator/health/liveness'
-              port: 8080
+            httpGet: { path: "/actuator/health/liveness", port: 8080 }
             initialDelaySeconds: 60
             timeoutSeconds: 5
             periodSeconds: 10
             failureThreshold: 3
-
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -247,32 +231,26 @@ spec:
             - name: SPRING_DATASOURCE_URL
               value: "jdbc:postgresql://postgres:5432/chatbot"
             - name: SPRING_DATASOURCE_USERNAME
-              valueFrom:
-                secretKeyRef:
-                  name: postgres-secret
-                  key: username
+              valueFrom: { secretKeyRef: { name: postgres-secret, key: username } }
             - name: SPRING_DATASOURCE_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: postgres-secret
-                  key: password
+              valueFrom: { secretKeyRef: { name: postgres-secret, key: password } }
+            # Kafka
+            - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+              value: "kafka.smart-be.svc.cluster.local:9092"
+            - name: SPRING_CLOUD_STREAM_KAFKA_BINDER_BROKERS
+              value: "kafka.smart-be.svc.cluster.local:9092"
           readinessProbe:
-            httpGet:
-              path: '/actuator/health/readiness'
-              port: 8080
+            httpGet: { path: "/actuator/health/readiness", port: 8080 }
             initialDelaySeconds: 30
             timeoutSeconds: 5
             periodSeconds: 10
             failureThreshold: 3
           livenessProbe:
-            httpGet:
-              path: '/actuator/health/liveness'
-              port: 8080
+            httpGet: { path: "/actuator/health/liveness", port: 8080 }
             initialDelaySeconds: 60
             timeoutSeconds: 5
             periodSeconds: 10
             failureThreshold: 3
-
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -302,32 +280,26 @@ spec:
             - name: SPRING_DATASOURCE_URL
               value: "jdbc:postgresql://postgres:5432/paintingprocessmonitoring"
             - name: SPRING_DATASOURCE_USERNAME
-              valueFrom:
-                secretKeyRef:
-                  name: postgres-secret
-                  key: username
+              valueFrom: { secretKeyRef: { name: postgres-secret, key: username } }
             - name: SPRING_DATASOURCE_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: postgres-secret
-                  key: password
+              valueFrom: { secretKeyRef: { name: postgres-secret, key: password } }
+            # Kafka
+            - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+              value: "kafka.smart-be.svc.cluster.local:9092"
+            - name: SPRING_CLOUD_STREAM_KAFKA_BINDER_BROKERS
+              value: "kafka.smart-be.svc.cluster.local:9092"
           readinessProbe:
-            httpGet:
-              path: '/actuator/health/readiness'
-              port: 8080
+            httpGet: { path: "/actuator/health/readiness", port: 8080 }
             initialDelaySeconds: 30
             timeoutSeconds: 5
             periodSeconds: 10
             failureThreshold: 3
           livenessProbe:
-            httpGet:
-              path: '/actuator/health/liveness'
-              port: 8080
+            httpGet: { path: "/actuator/health/liveness", port: 8080 }
             initialDelaySeconds: 60
             timeoutSeconds: 5
             periodSeconds: 10
             failureThreshold: 3
-
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -357,32 +329,26 @@ spec:
             - name: SPRING_DATASOURCE_URL
               value: "jdbc:postgresql://postgres:5432/assemblyprocessmonitoring"
             - name: SPRING_DATASOURCE_USERNAME
-              valueFrom:
-                secretKeyRef:
-                  name: postgres-secret
-                  key: username
+              valueFrom: { secretKeyRef: { name: postgres-secret, key: username } }
             - name: SPRING_DATASOURCE_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: postgres-secret
-                  key: password
+              valueFrom: { secretKeyRef: { name: postgres-secret, key: password } }
+            # Kafka
+            - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+              value: "kafka.smart-be.svc.cluster.local:9092"
+            - name: SPRING_CLOUD_STREAM_KAFKA_BINDER_BROKERS
+              value: "kafka.smart-be.svc.cluster.local:9092"
           readinessProbe:
-            httpGet:
-              path: '/actuator/health/readiness'
-              port: 8080
+            httpGet: { path: "/actuator/health/readiness", port: 8080 }
             initialDelaySeconds: 30
             timeoutSeconds: 5
             periodSeconds: 10
             failureThreshold: 3
           livenessProbe:
-            httpGet:
-              path: '/actuator/health/liveness'
-              port: 8080
+            httpGet: { path: "/actuator/health/liveness", port: 8080 }
             initialDelaySeconds: 60
             timeoutSeconds: 5
             periodSeconds: 10
             failureThreshold: 3
-
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -412,27 +378,22 @@ spec:
             - name: SPRING_DATASOURCE_URL
               value: "jdbc:postgresql://postgres:5432/weldingprocessmonitoring"
             - name: SPRING_DATASOURCE_USERNAME
-              valueFrom:
-                secretKeyRef:
-                  name: postgres-secret
-                  key: username
+              valueFrom: { secretKeyRef: { name: postgres-secret, key: username } }
             - name: SPRING_DATASOURCE_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: postgres-secret
-                  key: password
+              valueFrom: { secretKeyRef: { name: postgres-secret, key: password } }
+            # Kafka
+            - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+              value: "kafka.smart-be.svc.cluster.local:9092"
+            - name: SPRING_CLOUD_STREAM_KAFKA_BINDER_BROKERS
+              value: "kafka.smart-be.svc.cluster.local:9092"
           readinessProbe:
-            httpGet:
-              path: '/actuator/health/readiness'
-              port: 8080
+            httpGet: { path: "/actuator/health/readiness", port: 8080 }
             initialDelaySeconds: 30
             timeoutSeconds: 5
             periodSeconds: 10
             failureThreshold: 3
           livenessProbe:
-            httpGet:
-              path: '/actuator/health/liveness'
-              port: 8080
+            httpGet: { path: "/actuator/health/liveness", port: 8080 }
             initialDelaySeconds: 60
             timeoutSeconds: 5
             periodSeconds: 10
@@ -452,7 +413,6 @@ spec:
       targetPort: 8080
   selector:
     app: usermanagement
-
 ---
 apiVersion: v1
 kind: Service
@@ -467,7 +427,6 @@ spec:
       targetPort: 8080
   selector:
     app: report
-
 ---
 apiVersion: v1
 kind: Service
@@ -482,7 +441,6 @@ spec:
       targetPort: 8080
   selector:
     app: approvalmanagement
-
 ---
 apiVersion: v1
 kind: Service
@@ -497,7 +455,6 @@ spec:
       targetPort: 8080
   selector:
     app: pressfaultdetection
-
 ---
 apiVersion: v1
 kind: Service
@@ -512,7 +469,6 @@ spec:
       targetPort: 8080
   selector:
     app: chatbot
-
 ---
 apiVersion: v1
 kind: Service
@@ -527,7 +483,6 @@ spec:
       targetPort: 8080
   selector:
     app: paintingprocessmonitoring
-
 ---
 apiVersion: v1
 kind: Service
@@ -542,7 +497,6 @@ spec:
       targetPort: 8080
   selector:
     app: assemblyprocessmonitoring
-
 ---
 apiVersion: v1
 kind: Service

@@ -86,7 +86,7 @@ spring:
         - id: approvalmanagement
           uri: http://approvalmanagement:8080
           predicates:
-            - Path=/userApprovals/**
+            - Path=/userApprovals/**, /api/approvals/**
         - id: pressfaultdetection
           uri: http://pressfaultdetection:8080
           predicates:
@@ -140,7 +140,7 @@ spring:
         - id: approvalmanagement
           uri: http://approvalmanagement.smart-be.svc.cluster.local:8080
           predicates:
-            - Path=/userApprovals/**
+            - Path=/userApprovals/**, /api/approvals/**
         - id: pressfaultdetection
           uri: http://pressfaultdetection.smart-be.svc.cluster.local:8080
           predicates:
