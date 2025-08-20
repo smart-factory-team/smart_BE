@@ -9,7 +9,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import javax.persistence.*;
+import jakarta.persistence.*;
 import lombok.Data;
 
 @Entity
