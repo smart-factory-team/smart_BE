@@ -9,8 +9,12 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import javax.persistence.*;
+import jakarta.persistence.*;
 import lombok.Data;
+import org.hibernate.annotations.GenericGenerator;
+import org.hibernate.annotations.Type;
+
+import io.hypersistence.utils.hibernate.type.json.JsonType;
 
 @Entity
 @Table(name = "PressFaultDetectionLog_table")
@@ -19,18 +23,25 @@ import lombok.Data;
 public class PressFaultDetectionLog {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(generator = "uuid")
+    @GenericGenerator(name = "uuid", strategy = "org.hibernate.id.UUIDGenerator")
     private String id;
 
     private Long machineId;
 
     private Date timeStamp;
 
-    private Float ai0Vibration;
+    @Type(JsonType.class)
+    @Column(columnDefinition = "jsonb")
+    private String ai0Vibration;
 
-    private Float ai1Vibration;
+    @Type(JsonType.class)
+    @Column(columnDefinition = "jsonb")
+    private String ai1Vibration;
 
-    private Float ai2Current;
+    @Type(JsonType.class)
+    @Column(columnDefinition = "jsonb")
+    private String ai2Current;
 
     private String issue;
 
@@ -39,14 +50,14 @@ public class PressFaultDetectionLog {
     @PostPersist
     public void onPostPersist() {
         PressFaultDetectionSaved pressFaultDetectionSaved = new PressFaultDetectionSaved(
-            this
+                this
         );
         pressFaultDetectionSaved.publishAfterCommit();
     }
 
     public static PressFaultDetectionLogRepository repository() {
         PressFaultDetectionLogRepository pressFaultDetectionLogRepository = PressfaultdetectionApplication.applicationContext.getBean(
-            PressFaultDetectionLogRepository.class
+                PressFaultDetectionLogRepository.class
         );
         return pressFaultDetectionLogRepository;
     }
@@ -54,28 +65,35 @@ public class PressFaultDetectionLog {
     //<<< Clean Arch / Port Method
     public static void issueSolvedPolicy(IssueSolved issueSolved) {
         //implement business logic here:
+        repository().deleteById(issueSolved.getId());
+        // repository()
+        //     .findById(issueSolved.getId())
+        //     .ifPresent(pressFaultDetectionLog -> {
+        //         pressFaultDetectionLog.setIsSolved(true);
+        //         repository().save(pressFaultDetectionLog);
+        //     });
 
         /** Example 1:  new item 
-        PressFaultDetectionLog pressFaultDetectionLog = new PressFaultDetectionLog();
-        repository().save(pressFaultDetectionLog);
+         PressFaultDetectionLog pressFaultDetectionLog = new PressFaultDetectionLog();
+         repository().save(pressFaultDetectionLog);
 
-        IssueSolved issueSolved = new IssueSolved(pressFaultDetectionLog);
-        issueSolved.publishAfterCommit();
-        */
-
+         IssueSolved issueSolved = new IssueSolved(pressFaultDetectionLog);
+         issueSolved.publishAfterCommit();
+         */
+        // implement business logic here:
         /** Example 2:  finding and process
-        
 
-        repository().findById(issueSolved.get???()).ifPresent(pressFaultDetectionLog->{
-            
-            pressFaultDetectionLog // do something
-            repository().save(pressFaultDetectionLog);
 
-            IssueSolved issueSolved = new IssueSolved(pressFaultDetectionLog);
-            issueSolved.publishAfterCommit();
+         repository().findById(issueSolved.get???()).ifPresent(pressFaultDetectionLog->{
+
+         pressFaultDetectionLog // do something
+         repository().save(pressFaultDetectionLog);
+
+         IssueSolved issueSolved = new IssueSolved(pressFaultDetectionLog);
+         issueSolved.publishAfterCommit();
 
          });
-        */
+         */
 
     }
     //>>> Clean Arch / Port Method
