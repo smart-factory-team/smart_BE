@@ -2,6 +2,7 @@ package carsmartfactory.domain;
 
 import carsmartfactory.domain.*;
 import org.springframework.data.repository.PagingAndSortingRepository;
+import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 
 //<<< PoEAA / Repository
@@ -11,4 +12,5 @@ import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 )
 public interface PaintingSurfaceDefectDetectionLogRepository
     extends
-        PagingAndSortingRepository<PaintingSurfaceDefectDetectionLog, String> {}
+        PagingAndSortingRepository<PaintingSurfaceDefectDetectionLog, String>,
+        CrudRepository<PaintingSurfaceDefectDetectionLog, String> {}

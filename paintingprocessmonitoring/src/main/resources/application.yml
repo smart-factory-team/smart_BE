@@ -101,6 +101,8 @@ spring:
       password: admin123
       roles: ADMIN
 
+
+
 # 서버 포트 (로컬 개발시 Gateway와 다른 포트)
 server:
   port: 8087
@@ -214,7 +216,6 @@ logging:
     carsmartfactory: INFO
     org.hibernate: WARN
     org.springframework: WARN
-
 ---
 # ========================================
 # PRODUCTION PROFILE (Azure 배포환경)
@@ -293,10 +294,10 @@ logging:
 jwt:
   secret: ${JWT_SECRET:smartFactorySecretKeyForProductionEnvironmentUseOnly2024}
   expiration: 86400000  # 24시간
-
 # 애플리케이션 설정
 app:
   security:
     jwt:
       secret-key: ${JWT_SECRET:smartFactorySecretKeyForProductionEnvironmentUseOnly2024}
       expiration-time: 86400000
+
