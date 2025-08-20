@@ -26,7 +26,7 @@ public class PolicyHandler {
      * Kafka 'carsmartfactory' 토픽에서 들어오는 모든 이벤트 처리 Spring Cloud Stream 4.x 함수형 바인딩 방식 application.yml:
      * spring.cloud.stream.bindings.eventIn-in-0
      */
-    @Bean
+    // @Bean
     public Consumer<Message<String>> eventIn() {
         return message -> {
             try {
