@@ -20,6 +20,7 @@ import lombok.Data;
 public class Post {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
     private String userId;
@@ -32,11 +33,12 @@ public class Post {
 
     private Date createdAt;
 
-    private Date updatedAt;
+    // private Date updatedAt;
 
-    private String issue;
+    // private String issue;
 
-    private Boolean isSolved;
+    @Column(columnDefinition = "boolean default false")
+    private Boolean isSolved = false;
 
     @PostPersist
     public void onPostPersist() {
