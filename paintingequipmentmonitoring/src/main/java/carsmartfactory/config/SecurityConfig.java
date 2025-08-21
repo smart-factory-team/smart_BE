@@ -15,11 +15,11 @@ public class SecurityConfig {
         http
             // 시뮬레이터가 호출하는 API 경로는 인증 없이 접근할 수 있도록 허용
             .authorizeHttpRequests(authorize -> authorize
-                .requestMatchers("/equipment-data/**").permitAll() 
+                .requestMatchers("/**").permitAll() 
                 .anyRequest().authenticated() // 그 외 나머지 모든 요청은 인증을 요구
             )
             // 해당 경로에 대해서는 CSRF 보호 기능 비활성화
-            .csrf(csrf -> csrf.ignoringRequestMatchers("/equipment-data/**"));
+            .csrf(csrf -> csrf.ignoringRequestMatchers("/**"));
 
         return http.build();
     }
