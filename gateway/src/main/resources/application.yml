@@ -48,7 +48,7 @@ spring:
         - id: paintingprocessmonitoring
           uri: http://localhost:8087
           predicates:
-            - Path=/paintingSurfaceDefectDetectionLogs/**, /paintingProcessEquipmentDefectDetectionLogs/**
+            - Path=/paintingSurfaceDefectDetectionLogs/**
         - id: assemblyprocessmonitoring
           uri: http://localhost:8090  # 8088 → 8090 변경 (포트 충돌 해결)
           predicates:
@@ -57,6 +57,10 @@ spring:
           uri: http://localhost:8089
           predicates:
             - Path=/weldingMachineDefectDetectionLogs/**
+        - id: paintingequipmentmonitoring
+          uri: http://localhost:8091
+          predicates:
+            - Path=/equipment-data/**, /paintingProcessEquipmentDefectDetectionLogs/**
         - id: frontend
           uri: http://localhost:8080
           predicates:
@@ -98,7 +102,7 @@ spring:
         - id: paintingprocessmonitoring
           uri: http://paintingprocessmonitoring:8080
           predicates:
-            - Path=/paintingSurfaceDefectDetectionLogs/**, /paintingProcessEquipmentDefectDetectionLogs/**
+            - Path=/paintingSurfaceDefectDetectionLogs/**
         - id: assemblyprocessmonitoring
           uri: http://assemblyprocessmonitoring:8080
           predicates:
@@ -107,6 +111,10 @@ spring:
           uri: http://weldingprocessmonitoring:8080
           predicates:
             - Path=/weldingMachineDefectDetectionLogs/**
+        - id: paintingequipmentmonitoring
+          uri: http://paintingequipmentmonitoring:8080
+          predicates:
+            - Path=/equipment-data/**, /paintingProcessEquipmentDefectDetectionLogs/**
         - id: frontend
           uri: http://frontend:8080
           predicates:
@@ -149,10 +157,14 @@ spring:
           uri: http://chatbot.smart-be.svc.cluster.local:8080
           predicates:
             - Path=/agentSessions/**, /issues/**
+        - id: paintingequipmentmonitoring
+          uri: http://paintingequipmentmonitoring.smart-be.svc.cluster.local:8080
+          predicates:
+            - Path=/equipment-data/**, /paintingProcessEquipmentDefectDetectionLogs/**
         - id: paintingprocessmonitoring
           uri: http://paintingprocessmonitoring.smart-be.svc.cluster.local:8080
           predicates:
-            - Path=/paintingSurfaceDefectDetectionLogs/**, /paintingProcessEquipmentDefectDetectionLogs/**
+            - Path=/paintingSurfaceDefectDetectionLogs/**
         - id: assemblyprocessmonitoring
           uri: http://assemblyprocessmonitoring.smart-be.svc.cluster.local:8080
           predicates:
