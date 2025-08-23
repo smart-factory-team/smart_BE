@@ -61,6 +61,16 @@ spring:
           uri: http://localhost:8091
           predicates:
             - Path=/equipment-data/**, /paintingProcessEquipmentDefectDetectionLogs/**
+        - id: paintingequipmentmonitoring-ws
+          uri: ws://localhost:8091
+          predicates:
+            - Path=/ws/monitoring-data/**
+        - id: painting-equipment-simulator-api
+          uri: http://localhost:8011
+          predicates:
+            - Path=/simulators/painting-equipment/**
+          filters:
+            - RewritePath=/simulators/painting-equipment/(?<segment>.*), /simulator/${segment}
         - id: frontend
           uri: http://localhost:8080
           predicates:
@@ -115,6 +125,17 @@ spring:
           uri: http://paintingequipmentmonitoring:8080
           predicates:
             - Path=/equipment-data/**, /paintingProcessEquipmentDefectDetectionLogs/**
+        - id: paintingequipmentmonitoring-ws
+          uri: ws://paintingequipmentmonitoring:8080
+          predicates:
+            - Path=/ws/monitoring-data/**
+            - Scheme=ws,wss
+        - id: painting-equipment-simulator-api
+          uri: http://simulator-service:8011
+          predicates:
+            - Path=/simulators/painting-equipment/**
+          filters:
+            - RewritePath=/simulators/painting-equipment/(?<segment>.*), /simulator/${segment}
         - id: frontend
           uri: http://frontend:8080
           predicates:
@@ -161,6 +182,10 @@ spring:
           uri: http://paintingequipmentmonitoring.smart-be.svc.cluster.local:8080
           predicates:
             - Path=/equipment-data/**, /paintingProcessEquipmentDefectDetectionLogs/**
+        - id: paintingequipmentmonitoring-ws
+          uri: ws://paintingequipmentmonitoring.smart-be.svc.cluster.local:8080
+          predicates:
+            - Path=/ws/monitoring-data/**
         - id: paintingprocessmonitoring
           uri: http://paintingprocessmonitoring.smart-be.svc.cluster.local:8080
           predicates:
@@ -239,6 +264,12 @@ spring:
             - RewritePath=/api/v1/vehicle/assembly/defect/(?<segment>.*), /${segment}
 
         # ===== Data Simulators =====
+        - id: painting-equipment-simulator-api
+          uri: http://sf-painting-process-data-simulator-service.sf-painting-process-data-simulator-service.svc.cluster.local:80
+          predicates:
+            - Path=/simulators/painting-equipment/**
+          filters:
+            - RewritePath=/simulators/painting-equipment/(?<segment>.*), /simulator/${segment}
         - id: painting-process-simulator-api
           uri: http://sf-painting-process-data-simulator-service.sf-painting-process-data-simulator-service.svc.cluster.local:80
           predicates:

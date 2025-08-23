@@ -26,6 +26,7 @@ public class EquipmentDataProcessor {
     private final StreamBridge streamBridge;
     private final ObjectMapper objectMapper;
     private final PaintingProcessEquipmentDefectDetectionLogRepository repository; // DB 저장을 위한 Repository
+    private final MonitoringWebSocketHandler monitoringWebSocketHandler; // WebSocket 핸들러 주입
 
     /**
      * Kafka 토픽 A (equipment-data-topic)에서 메시지를 수신하여 처리합니다.
@@ -37,6 +38,7 @@ public class EquipmentDataProcessor {
             log.info("=== Kafka 토픽 A (equipment-data-topic) 메시지 수신 ===");
             log.info("수신된 데이터: {}", event.toString());
 
+            System.out.println("DEBUG: About to broadcast event to WebSocket.");
             try {
                 ModelPredictionRequest request = objectMapper.convertValue(event, ModelPredictionRequest.class);
 
@@ -45,25 +47,29 @@ public class EquipmentDataProcessor {
                 log.info("모델 서비스 API 호출 완료");
 
                 // 모델이 204 No Content를 반환하면 response가 null이 될 수 있음
-                if (response == null || response.getIssue() == null || response.getIssue().isEmpty()) {
-                    log.info("모델 분석 결과: 특이사항 없음. 처리를 종료합니다.");
-                    return;
-                }
+                if (response != null && response.getIssue() != null && !response.getIssue().isEmpty()) {
+                    log.info("모델 분석 결과: {}", response.toString());
+                    // 원본 데이터(event)에 결함 정보(issue)를 추가
+                    event.setIssue(response.getIssue());
 
-                log.info("모델 분석 결과: {}", response.toString());
+                    boolean sent = streamBridge.send(
+                        "modelResultOut-out-0", // 토픽 B 바인딩
+                        MessageBuilder.withPayload(response)
+                            .setHeader("type", "ModelResultReceived")
+                            .build()
+                    );
 
-                boolean sent = streamBridge.send(
-                    "modelResultOut-out-0", // 토픽 B 바인딩
-                    MessageBuilder.withPayload(response)
-                        .setHeader("type", "ModelResultReceived")
-                        .build()
-                );
-
-                if (sent) {
-                    log.info("✅ Kafka 토픽 B로 모델 분석 결과 발행 성공");
+                    if (sent) {
+                        log.info("✅ Kafka 토픽 B로 모델 분석 결과 발행 성공");
+                    } else {
+                        log.error("❌ Kafka 토픽 B로 모델 분석 결과 발행 실패");
+                    }
                 } else {
-                    log.error("❌ Kafka 토픽 B로 모델 분석 결과 발행 실패");
+                    log.info("모델 분석 결과: 특이사항 없음.");
                 }
+
+                // WebSocket으로 실시간 데이터 전송 (결함 정보가 포함될 수 있음)
+                monitoringWebSocketHandler.broadcast(event);
 
             } catch (FeignException e) {
                 log.error("❌ 모델 서비스 호출 실패: status={}, response={}", e.status(), e.contentUTF8(), e);
