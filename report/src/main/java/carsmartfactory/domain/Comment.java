@@ -19,6 +19,7 @@ import lombok.Data;
 public class Comment {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
     private String postId;
@@ -31,7 +32,7 @@ public class Comment {
 
     private Date createdAt;
 
-    private Date updatedAt;
+    // private Date updatedAt;
 
     private Boolean isDeleted;
 

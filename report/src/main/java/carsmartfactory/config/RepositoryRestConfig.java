@@ -1,5 +1,6 @@
 package carsmartfactory.config;
 
+import carsmartfactory.domain.Comment;
 import carsmartfactory.domain.Post;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.rest.core.config.RepositoryRestConfiguration;
@@ -11,6 +12,7 @@ public class RepositoryRestConfig implements RepositoryRestConfigurer {
 
     @Override
     public void configureRepositoryRestConfiguration(RepositoryRestConfiguration config, CorsRegistry cors) {
-        config.exposeIdsFor(Post.class);
+        config.exposeIdsFor(Post.class)
+        .exposeIdsFor(Comment.class);
     }
 }

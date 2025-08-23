@@ -19,6 +19,7 @@ import lombok.Data;
 public class Report {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
     private String postId;
