@@ -1,6 +1,7 @@
 package carsmartfactory.infra;
 
 import carsmartfactory.domain.*;
+import java.util.List;
 import java.util.Optional;
 // javax → jakarta 패키지 변경
 import jakarta.servlet.http.HttpServletRequest;
@@ -14,11 +15,16 @@ import org.springframework.web.bind.annotation.RestController;
 //<<< Clean Arch / Inbound Adaptor
 
 @RestController
-// @RequestMapping(value="/paintingProcessEquipmentDefectDetectionLogs")
+@RequestMapping(value="/paintingProcessEquipmentDefectDetectionLogs")
 @Transactional
 public class PaintingProcessEquipmentDefectDetectionLogController {
 
     @Autowired
     PaintingProcessEquipmentDefectDetectionLogRepository paintingProcessEquipmentDefectDetectionLogRepository;
+
+    @GetMapping
+    public List<PaintingProcessEquipmentDefectDetectionLog> getAllLogs() {
+        return paintingProcessEquipmentDefectDetectionLogRepository.findAll();
+    }
 }
 //>>> Clean Arch / Inbound Adaptor

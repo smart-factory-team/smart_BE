@@ -9,7 +9,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
       # 각 마이크로서비스별 스키마 자동 생성
-      POSTGRES_MULTIPLE_DATABASES: usermanagement,report,approvalmanagement,pressfaultdetection,chatbot,assemblyprocessmonitoring,weldingprocessmonitoring
+      POSTGRES_MULTIPLE_DATABASES: usermanagement,report,approvalmanagement,pressfaultdetection,chatbot,assemblyprocessmonitoring,weldingprocessmonitoring,paintingequipmentmonitoring
     ports:
       - "5432:5432"
     volumes:

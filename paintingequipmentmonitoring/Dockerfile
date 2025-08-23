@@ -24,7 +24,7 @@ FROM eclipse-temurin:17-jre
 
 # Add metadata
 LABEL maintainer="Smart BE Team"
-LABEL service="paintingprocessmonitoring"
+LABEL service="paintingequipmentmonitoring"
 LABEL version="1.0.0"
 
 # Create non-root user for security

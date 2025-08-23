@@ -17,9 +17,6 @@ import org.springframework.stereotype.Service;
 public class PolicyHandler {
 
     @Autowired
-    PaintingSurfaceDefectDetectionLogRepository paintingSurfaceDefectDetectionLogRepository;
-
-    @Autowired
     PaintingProcessEquipmentDefectDetectionLogRepository paintingProcessEquipmentDefectDetectionLogRepository;
 
     /**
@@ -65,10 +62,6 @@ public class PolicyHandler {
             // Equipment 이슈 해결 정책
             System.out.println("\n\n##### listener EquipmentIssueSolvedPolicy : " + event + "\n\n");
             PaintingProcessEquipmentDefectDetectionLog.equipmentIssueSolvedPolicy(event);
-
-            // Surface 이슈 해결 정책
-            System.out.println("\n\n##### listener SurfaceIssueSolvedPolicy : " + event + "\n\n");
-            PaintingSurfaceDefectDetectionLog.surfaceIssueSolvedPolicy(event);
 
         } catch (Exception e) {
             System.err.println("##### Error handling IssueSolved: " + e.getMessage() + " #####");

@@ -80,7 +80,7 @@ spring:
         # 토픽 A -> 모델 서비스 호출용
         processEquipmentData-in-0:
           destination: equipment-data-topic
-          group: paintingprocessmonitoring-processor
+          group: paintingequipmentmonitoring-processor
         # 토픽 B -> DB 저장용
         processModelResult-in-0:
           destination: model-result-topic
@@ -105,7 +105,7 @@ feign:
       url: http://localhost:8001
 
 server:
-  port: 8087
+  port: 8091
 
 # 로깅 설정
 logging:
@@ -197,7 +197,7 @@ spring:
       bindings:
         processEquipmentData-in-0:
           destination: equipment-data-topic
-          group: paintingprocessmonitoring-processor
+          group: paintingequipmentmonitoring-processor
         processModelResult-in-0:
           destination: model-result-topic
           group: paintingprocessmonitoring-saver
@@ -281,7 +281,7 @@ spring:
       bindings:
         processEquipmentData-in-0:
           destination: equipment-data-topic
-          group: paintingprocessmonitoring-processor
+          group: paintingequipmentmonitoring-processor
         processModelResult-in-0:
           destination: model-result-topic
           group: paintingprocessmonitoring-saver
