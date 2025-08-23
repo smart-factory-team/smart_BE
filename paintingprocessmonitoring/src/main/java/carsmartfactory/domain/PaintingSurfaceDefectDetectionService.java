@@ -119,7 +119,7 @@ public class PaintingSurfaceDefectDetectionService {
             
             // AI 모델 결과 정보 설정
             if (result.getConfidence() != null) {
-                log.setPressTime(result.getConfidence().floatValue());
+                log.setPressTime(result.getConfidence().doubleValue());
             }
             
             // DB에 저장 (기존 repository() 메서드 사용)

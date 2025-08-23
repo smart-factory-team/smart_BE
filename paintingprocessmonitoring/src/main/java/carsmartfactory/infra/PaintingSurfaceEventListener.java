@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -32,17 +33,17 @@ public class PaintingSurfaceEventListener {
         System.out.println("이미지 크기: " + event.getImage().getSize() + " bytes");
         
         try {
-            // 1단계: AI 모델 서비스 호출
-            PaintingSurfacePredictionResponseDto prediction = modelClient.predict(
-                event.getImage(), 
-                0.5f  // 기본 신뢰도 임계값
-            );
+            // 컨트롤러에서 이미 AI 모델을 호출했으므로, 여기서는 DB 저장만 수행
+            System.out.println("=== 컨트롤러에서 이미 AI 모델 호출 완료 - DB 저장만 수행 ===");
+            
+            // 이벤트에서 AI 모델 결과를 가져와서 DB에 저장
+            PaintingSurfacePredictionResponseDto prediction = event.getAiModelResult();
             
             if (prediction != null) {
-                System.out.println("=== AI 모델 응답 성공 ===");
+                System.out.println("=== AI 모델 결과 수신 성공 ===");
                 
                 if (prediction.getPredictions() != null && !prediction.getPredictions().isEmpty()) {
-                    System.out.println("=== 결함 감지: " + prediction.getPredictions().size() + "개 결함 발견 ===");
+                    System.out.println("=== 결함 감지: " + prediction.getPredictions().size() + "개 결함 발견 - DB 저장 시작 ===");
                     
                     // 모든 결함을 개별 레코드로 저장
                     for (int i = 0; i < prediction.getPredictions().size(); i++) {
@@ -51,14 +52,16 @@ public class PaintingSurfaceEventListener {
                         saveDefectDetectionLog(event.getImage(), result, i);
                     }
                     
-                    System.out.println("=== 모든 결함 DB 저장 및 이벤트 발행 완료 ===");
+                    System.out.println("=== 모든 결함 DB 저장 완료 ===");
                     
                 } else {
                     System.out.println("=== 정상 상태 - DB 저장 없음 ===");
+                    // 정상 이미지는 별도 테이블에 저장하거나 통계에 반영
+                    // 현재는 결함 이미지만 DB에 저장됨
                 }
                 
             } else {
-                System.out.println("=== AI 모델 응답 없음 ===");
+                System.out.println("=== AI 모델 결과 없음 - DB 저장 건너뜀 ===");
             }
             
         } catch (Exception e) {
@@ -83,12 +86,12 @@ public class PaintingSurfaceEventListener {
                 Double confidence = (Double) firstPrediction.get("confidence");
                 
                 // 결함 위치 및 크기 정보 추출
-                Float defectX = extractFloatValue(firstPrediction, "center_x");
-                Float defectY = extractFloatValue(firstPrediction, "center_y");
-                Float defectWidth = extractFloatValue(firstPrediction, "width");
-                Float defectHeight = extractFloatValue(firstPrediction, "height");
-                Float defectArea = extractFloatValue(firstPrediction, "area");
-                String defectBbox = extractBboxString(firstPrediction);
+                Double defectX = extractDoubleValue(firstPrediction, "center_x");
+                Double defectY = extractDoubleValue(firstPrediction, "center_y");
+                Double defectWidth = extractDoubleValue(firstPrediction, "width");
+                Double defectHeight = extractDoubleValue(firstPrediction, "height");
+                Double defectArea = extractDoubleValue(firstPrediction, "area");
+                List<Double> defectBbox = extractBboxList(firstPrediction);
                 
                 return new DefectDetectionResult(
                     "defect",           // status: 결함 감지
@@ -116,35 +119,31 @@ public class PaintingSurfaceEventListener {
             Double confidence = (Double) prediction.get("confidence");
             
             // bbox에서 위치 및 크기 정보 계산
-            Float defectX = null;
-            Float defectY = null;
-            Float defectWidth = null;
-            Float defectHeight = null;
-            Float defectArea = extractFloatValue(prediction, "area");
-            String defectBbox = extractBboxString(prediction);
+            Double defectX = null;
+            Double defectY = null;
+            Double defectWidth = null;
+            Double defectHeight = null;
+            Double defectArea = extractDoubleValue(prediction, "area");
+            List<Double> defectBbox = extractBboxList(prediction);
             
             // bbox가 있으면 center_x, center_y, width, height 계산
-            if (defectBbox != null) {
+            if (defectBbox != null && defectBbox.size() >= 4) {
                 try {
-                    // bbox = "[x1, y1, x2, y2]" 형태의 문자열을 파싱
-                    String bboxStr = defectBbox.replace("[", "").replace("]", "");
-                    String[] coords = bboxStr.split(",");
-                    if (coords.length == 4) {
-                        Float x1 = Float.parseFloat(coords[0].trim());
-                        Float y1 = Float.parseFloat(coords[1].trim());
-                        Float x2 = Float.parseFloat(coords[2].trim());
-                        Float y2 = Float.parseFloat(coords[3].trim());
-                        
-                        // 중심점 계산
-                        defectX = (x1 + x2) / 2;
-                        defectY = (y1 + y2) / 2;
-                        
-                        // 너비와 높이 계산
-                        defectWidth = x2 - x1;
-                        defectHeight = y2 - y1;
-                    }
+                    // bbox = [x1, y1, x2, y2] 형태의 List<Double>
+                    Double x1 = defectBbox.get(0);
+                    Double y1 = defectBbox.get(1);
+                    Double x2 = defectBbox.get(2);
+                    Double y2 = defectBbox.get(3);
+                    
+                    // 중심점 계산
+                    defectX = (x1 + x2) / 2.0;
+                    defectY = (y1 + y2) / 2.0;
+                    
+                    // 너비와 높이 계산
+                    defectWidth = x2 - x1;
+                    defectHeight = y2 - y1;
                 } catch (Exception e) {
-                    System.out.println("=== bbox 파싱 중 오류: " + e.getMessage() + " ===");
+                    System.out.println("=== bbox 계산 중 오류: " + e.getMessage() + " ===");
                 }
             }
             
@@ -164,15 +163,15 @@ public class PaintingSurfaceEventListener {
     }
     
     /**
-     * Map에서 Float 값을 안전하게 추출
+     * Map에서 Double 값을 안전하게 추출
      */
-    private Float extractFloatValue(Map<String, Object> prediction, String key) {
+    private Double extractDoubleValue(Map<String, Object> prediction, String key) {
         try {
             Object value = prediction.get(key);
             if (value instanceof Number) {
-                return ((Number) value).floatValue();
+                return ((Number) value).doubleValue();
             } else if (value instanceof String) {
-                return Float.parseFloat((String) value);
+                return Double.parseDouble((String) value);
             }
         } catch (Exception e) {
             System.out.println("=== " + key + " 값 추출 실패: " + e.getMessage() + " ===");
@@ -181,16 +180,25 @@ public class PaintingSurfaceEventListener {
     }
     
     /**
-     * 바운딩 박스 정보를 JSON 문자열로 변환
+     * 바운딩 박스 정보를 List<Double>로 추출
      */
-    private String extractBboxString(Map<String, Object> prediction) {
+    @SuppressWarnings("unchecked")
+    private List<Double> extractBboxList(Map<String, Object> prediction) {
         try {
             Object bbox = prediction.get("bbox");
             if (bbox instanceof List) {
                 List<?> bboxList = (List<?>) bbox;
                 if (bboxList.size() >= 4) {
-                    return String.format("[%.2f, %.2f, %.2f, %.2f]", 
-                        bboxList.get(0), bboxList.get(1), bboxList.get(2), bboxList.get(3));
+                    // 모든 요소를 Double로 변환
+                    List<Double> doubleList = new ArrayList<>();
+                    for (Object item : bboxList) {
+                        if (item instanceof Number) {
+                            doubleList.add(((Number) item).doubleValue());
+                        } else if (item instanceof String) {
+                            doubleList.add(Double.parseDouble((String) item));
+                        }
+                    }
+                    return doubleList.size() >= 4 ? doubleList : null;
                 }
             }
         } catch (Exception e) {
@@ -207,8 +215,10 @@ public class PaintingSurfaceEventListener {
             // 새로운 결함 감지 로그 엔티티 생성
             PaintingSurfaceDefectDetectionLog log = new PaintingSurfaceDefectDetectionLog();
             
-            // 기본 정보 설정
-            log.setMachineName("Painting-Surface-Detector");
+            // 기본 정보 설정 (기계별 구분)
+            String[] machines = {"도장라인-A", "도장라인-B"};
+            String selectedMachine = machines[(int)(Math.random() * machines.length)];
+            log.setMachineName(selectedMachine);
             log.setItemNo(image.getOriginalFilename());
             log.setTimeStamp(new Date());
             log.setDefectType(result.getDefectType());
@@ -217,7 +227,7 @@ public class PaintingSurfaceEventListener {
             
             // AI 모델 결과 정보 설정
             if (result.getConfidence() != null) {
-                log.setPressTime(result.getConfidence().floatValue());
+                log.setPressTime(result.getConfidence().doubleValue());
             }
             
             // 결함 위치 및 크기 정보 설정
@@ -232,8 +242,8 @@ public class PaintingSurfaceEventListener {
             log.setDefectIndex(result.getDefectIndex());
             log.setOriginalImageName(image.getOriginalFilename());
             
-            // DB에 저장 (기존 repository() 메서드 사용)
-            PaintingSurfaceDefectDetectionLog.repository().save(log);
+            // DB에 저장
+            repository.save(log);
             
             System.out.println("=== 로그 저장 완료: " + log.getId() + " ===");
             

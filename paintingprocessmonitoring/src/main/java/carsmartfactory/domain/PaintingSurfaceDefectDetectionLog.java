@@ -37,15 +37,15 @@ public class PaintingSurfaceDefectDetectionLog {
     private Boolean isSolved;         // 해결 여부
     
     // AI 모델 결과 정보
-    private Float pressTime;          // AI 모델 신뢰도 (기존 필드명 유지)
+    private Double pressTime;          // AI 모델 신뢰도 (기존 필드명 유지)
     
-    // 결함 위치 및 크기 정보
-    private Float defectX;            // 결함 중심점 X 좌표
-    private Float defectY;            // 결함 중심점 Y 좌표
-    private Float defectWidth;        // 결함 너비
-    private Float defectHeight;       // 결함 높이
-    private Float defectArea;         // 결함 영역 크기
-    private String defectBbox;        // 바운딩 박스 좌표 (JSON 형태)
+    // 결함 위치 및 크기 정보 (Double 타입으로 변경)
+    private Double defectX;            // 결함 중심점 X 좌표
+    private Double defectY;            // 결함 중심점 Y 좌표
+    private Double defectWidth;        // 결함 너비
+    private Double defectHeight;       // 결함 높이
+    private Double defectArea;         // 결함 영역 크기
+    private List<Double> defectBbox;        // 바운딩 박스 좌표 (List<Double>로 변경)
     
     // 여러 결함 구분을 위한 필드
     private Integer defectIndex;      // 이미지 내 결함 순서 (0부터 시작)

@@ -8,6 +8,16 @@ spring:
   profiles:
     active: default
 
+# 도장표면결함탐지 관련 서비스 URL 설정
+painting:
+  surface:
+    model:
+      service:
+        url: http://localhost:8002
+    simulator:
+      service:
+        url: http://localhost:8012
+
 ---
 # ========================================
 # DEFAULT PROFILE (로컬 개발환경)
@@ -19,7 +29,7 @@ spring:
 
   # PostgreSQL 로컬 연결 설정
   datasource:
-    url: jdbc:postgresql://localhost:5432/smartfactory
+    url: jdbc:postgresql://localhost:5432/smart_factory
     username: postgres
     password: password
     driver-class-name: org.postgresql.Driver
@@ -105,7 +115,7 @@ spring:
 
 # 서버 포트 (로컬 개발시 Gateway와 다른 포트)
 server:
-  port: 8087
+  port: 8080
 
 # 로깅 설정
 logging:
@@ -146,7 +156,7 @@ spring:
 
   # PostgreSQL Docker 연결 설정
   datasource:
-    url: jdbc:postgresql://postgres:5432/smartfactory
+    url: jdbc:postgresql://smart-factory-postgres:5432/smartfactory
     username: postgres
     password: password
     driver-class-name: org.postgresql.Driver

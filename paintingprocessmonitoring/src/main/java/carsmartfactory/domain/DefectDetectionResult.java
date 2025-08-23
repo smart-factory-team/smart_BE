@@ -1,6 +1,7 @@
 package carsmartfactory.domain;
 
 import lombok.Data;
+import java.util.List;
 
 @Data
 public class DefectDetectionResult {
@@ -9,13 +10,13 @@ public class DefectDetectionResult {
     private Double confidence;    // 신뢰도 (0.0 ~ 1.0)
     private String message;       // 오류 메시지
     
-    // 결함 위치 및 크기 정보 추가
-    private Float defectX;        // 결함 중심점 X 좌표
-    private Float defectY;        // 결함 중심점 Y 좌표
-    private Float defectWidth;    // 결함 너비
-    private Float defectHeight;   // 결함 높이
-    private Float defectArea;     // 결함 영역 크기
-    private String defectBbox;    // 바운딩 박스 좌표
+    // 결함 위치 및 크기 정보 추가 (Double 타입으로 변경)
+    private Double defectX;        // 결함 중심점 X 좌표
+    private Double defectY;        // 결함 중심점 Y 좌표
+    private Double defectWidth;    // 결함 너비
+    private Double defectHeight;   // 결함 높이
+    private Double defectArea;     // 결함 영역 크기
+    private List<Double> defectBbox;    // 바운딩 박스 좌표 (List<Double>로 변경)
     
     // 여러 결함 구분을 위한 필드
     private Integer defectIndex;  // 이미지 내 결함 순서 (0부터 시작)
@@ -37,10 +38,10 @@ public class DefectDetectionResult {
         this.message = message;
     }
     
-    // 결함 위치 및 크기 정보를 포함하는 생성자 추가
+    // 결함 위치 및 크기 정보를 포함하는 생성자 추가 (Double 타입)
     public DefectDetectionResult(String status, String defectType, Double confidence, String message,
-                                Float defectX, Float defectY, Float defectWidth, Float defectHeight, 
-                                Float defectArea, String defectBbox) {
+                                Double defectX, Double defectY, Double defectWidth, Double defectHeight, 
+                                Double defectArea, List<Double> defectBbox) {
         this.status = status;
         this.defectType = defectType;
         this.confidence = confidence;
@@ -53,10 +54,10 @@ public class DefectDetectionResult {
         this.defectBbox = defectBbox;
     }
     
-    // 결함 순서 정보를 포함하는 생성자 추가
+    // 결함 순서 정보를 포함하는 생성자 추가 (Double 타입)
     public DefectDetectionResult(String status, String defectType, Double confidence, String message,
-                                Float defectX, Float defectY, Float defectWidth, Float defectHeight, 
-                                Float defectArea, String defectBbox, Integer defectIndex) {
+                                Double defectX, Double defectY, Double defectWidth, Double defectHeight, 
+                                Double defectArea, List<Double> defectBbox, Integer defectIndex) {
         this.status = status;
         this.defectType = defectType;
         this.confidence = confidence;

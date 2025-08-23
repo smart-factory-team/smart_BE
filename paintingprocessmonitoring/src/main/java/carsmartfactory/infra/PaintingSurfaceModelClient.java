@@ -12,6 +12,7 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
 import carsmartfactory.infra.dto.PaintingSurfacePredictionResponseDto;
+import java.util.Map;
 
 @Service
 public class PaintingSurfaceModelClient {
@@ -48,6 +49,32 @@ public class PaintingSurfaceModelClient {
             );
             
             System.out.println("=== FastAPI 응답 성공 ===");
+            
+            // AI 모델 응답 상세 로깅
+            if (response != null) {
+                System.out.println("=== AI 모델 응답 상세 정보 ===");
+                System.out.println("예측 결과 개수: " + (response.getPredictions() != null ? response.getPredictions().size() : 0));
+                System.out.println("이미지 크기: " + response.getImageShape());
+                System.out.println("신뢰도 임계값: " + response.getConfidenceThreshold());
+                System.out.println("타임스탬프: " + response.getTimestamp());
+                System.out.println("모델 소스: " + response.getModelSource());
+                
+                if (response.getPredictions() != null && !response.getPredictions().isEmpty()) {
+                    System.out.println("=== 결함 상세 정보 ===");
+                    for (int i = 0; i < response.getPredictions().size(); i++) {
+                        Map<String, Object> prediction = response.getPredictions().get(i);
+                        System.out.println("결함 " + (i + 1) + ":");
+                        System.out.println("  클래스명: " + prediction.get("class_name"));
+                        System.out.println("  신뢰도: " + prediction.get("confidence"));
+                        System.out.println("  바운딩박스: " + prediction.get("bbox"));
+                        System.out.println("  영역: " + prediction.get("area"));
+                    }
+                } else {
+                    System.out.println("=== 결함 없음 - 정상 상태 ===");
+                }
+                System.out.println("================================");
+            }
+            
             return response;
             
         } catch (Exception e) {
