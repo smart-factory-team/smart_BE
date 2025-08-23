@@ -9,6 +9,7 @@ import lombok.*;
 //<<< DDD / Domain Event
 @Data
 @ToString
+@EqualsAndHashCode(callSuper = false)  // ✅ 경고 제거
 public class WeldingMachineDefectSaved extends AbstractEvent {
 
     private String id;
@@ -32,7 +33,7 @@ public class WeldingMachineDefectSaved extends AbstractEvent {
     private Boolean isSolved;
 
     public WeldingMachineDefectSaved(
-        WeldingMachineDefectDetectionLog aggregate
+            WeldingMachineDefectDetectionLog aggregate
     ) {
         super(aggregate);
     }
