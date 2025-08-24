@@ -7,6 +7,16 @@ spring:
   profiles:
     active: default
 
+# 도장표면결함탐지 관련 서비스 URL 설정
+painting:
+  surface:
+    model:
+      service:
+        url: http://localhost:8002
+    simulator:
+      service:
+        url: http://localhost:8012
+
 ---
 # ========================================
 # DEFAULT PROFILE (로컬 개발환경)
@@ -16,7 +26,7 @@ spring:
     activate:
       on-profile: default
   datasource:
-    url: jdbc:postgresql://localhost:5432/smartfactory
+    url: jdbc:postgresql://localhost:5432/smart_factory
     username: postgres
     password: password
     driver-class-name: org.postgresql.Driver
@@ -99,13 +109,11 @@ spring:
       password: admin123
       roles: ADMIN
 
-feign:
-  client:
-    model-service:
-      url: http://localhost:8001
 
+
+# 서버 포트 (로컬 개발시 Gateway와 다른 포트)
 server:
-  port: 8087
+  port: 8080
 
 # 로깅 설정
 logging:
@@ -146,7 +154,7 @@ spring:
     activate:
       on-profile: docker
   datasource:
-    url: jdbc:postgresql://postgres:5432/smartfactory
+    url: jdbc:postgresql://smart-factory-postgres:5432/smartfactory
     username: postgres
     password: password
     driver-class-name: org.postgresql.Driver
@@ -222,7 +230,6 @@ logging:
     carsmartfactory: INFO
     org.hibernate: WARN
     org.springframework: WARN
-
 ---
 # ========================================
 # PRODUCTION PROFILE (Azure 배포환경)
@@ -310,10 +317,10 @@ logging:
 jwt:
   secret: ${JWT_SECRET:smartFactorySecretKeyForProductionEnvironmentUseOnly2024}
   expiration: 86400000  # 24시간
-
 # 애플리케이션 설정
 app:
   security:
     jwt:
       secret-key: ${JWT_SECRET:smartFactorySecretKeyForProductionEnvironmentUseOnly2024}
       expiration-time: 86400000
+
