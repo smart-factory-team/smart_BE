@@ -22,6 +22,8 @@ public class FrontendNotificationService {
             Map<String, Object> statusData = new HashMap<>();
             statusData.put("isFault", prediction.getIs_fault());
             statusData.put("prediction", prediction.getPrediction());
+            statusData.put("reconstructionError", prediction.getReconstruction_error());
+            // statusData.put("faultProbability", prediction.getFault_probability());
             
             // SSE로 모든 연결된 클라이언트에게 전송
             controller.broadcastFaultStatus(statusData);
