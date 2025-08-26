@@ -1,1 +1,22 @@
-git commit -m "✨ feat: Add domain event for detected prediction results" -m "모델 서비스의 결함 탐지 결과를 수신했을 때 발행되는 이벤트 클래스 추가. Kafka defect-data-detected 토픽으로 발행."
+package carsmartfactory;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.Bean;
+import org.springframework.web.client.RestTemplate;
+
+@SpringBootApplication
+public class PressDefectMonitoringApplication {
+    
+    public static ApplicationContext applicationContext;
+    
+    public static void main(String[] args) {
+        applicationContext = SpringApplication.run(PressDefectMonitoringApplication.class, args);
+    }
+    
+    @Bean
+    public RestTemplate restTemplate() {
+        return new RestTemplate();
+    }
+}
