@@ -1,0 +1,345 @@
+server:
+  port: 8092
+
+spring:
+  application:
+    name: pressdefectmonitoring
+
+  profiles:
+    active: default
+
+---
+# ========================================
+# DEFAULT PROFILE (로컬 개발환경)
+# ========================================
+spring:
+  config:
+    activate:
+      on-profile: default
+
+  # PostgreSQL 로컬 연결 설정
+  datasource:
+    url: jdbc:postgresql://localhost:5432/smartfactory
+    username: postgres
+    password: password
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      connection-timeout: 20000
+      maximum-pool-size: 10
+      minimum-idle: 5
+      idle-timeout: 300000
+      max-lifetime: 1200000
+      auto-commit: false
+
+  # JPA 설정
+  jpa:
+    hibernate:
+      ddl-auto: update
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+        implicit-strategy: org.hibernate.boot.model.naming.ImplicitNamingStrategyLegacyHbmImpl
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        show_sql: true
+        format_sql: true
+        use_sql_comments: true
+        jdbc:
+          lob:
+            non_contextual_creation: true
+        temp:
+          use_jdbc_metadata_defaults: false
+    show-sql: true
+    open-in-view: false
+
+  # 트랜잭션 설정
+  transaction:
+    rollback-on-commit-failure: true
+
+  # Kafka 설정 (로컬) - Spring Cloud Stream 4.x 방식
+  cloud:
+    stream:
+      # 함수형 바인딩 설정 - 새로운 이벤트 처리 함수들 추가
+      function:
+        definition: eventIn;rawDataOut;defectDataOut  # 3개 함수 정의
+      kafka:
+        binder:
+          brokers: localhost:9092
+          auto-create-topics: true
+          auto-add-partitions: true
+          configuration:
+            max.request.size: 10485760  # 10MB
+            buffer.memory: 67108864     # 64MB
+        bindings:
+          rawDataOut-out-0:
+            producer:
+              configuration:
+                max.request.size: 10485760
+          defectDataOut-out-0:
+            producer:
+              configuration:
+                max.request.size: 10485760
+        streams:
+          binder:
+            configuration:
+              default:
+                key:
+                  serde: org.apache.kafka.common.serialization.Serdes$StringSerde
+                value:
+                  serde: org.apache.kafka.common.serialization.Serdes$StringSerde
+              commit:
+                interval:
+                  ms: 1000
+      bindings:
+        # 기존 이벤트 수신 (IssueSolved 등)
+        eventIn-in-0:
+          destination: carsmartfactory
+          group: pressdefectmonitoring
+          contentType: application/json
+          consumer:
+            max-attempts: 3
+            back-off-initial-interval: 1000
+            
+        # 기존 이벤트 발행
+        eventOut-out-0:
+          destination: carsmartfactory
+          contentType: application/json
+          producer:
+            partition-count: 3
+            
+        # 🆕 새로운 토픽 A: 원시 데이터 수신 이벤트 발행
+        rawDataOut-out-0:
+          destination: raw-data-received
+          contentType: application/json
+          producer:
+            partition-count: 3
+            
+        # 🆕 새로운 토픽 B: 결함 탐지 결과 이벤트 발행  
+        defectDataOut-out-0:
+          destination: defect-data-detected
+          contentType: application/json
+          producer:
+            partition-count: 3
+
+  # Security 설정
+  security:
+    user:
+      name: admin
+      password: admin123
+      roles: ADMIN
+
+# 서버 포트 (로컬 개발시) - 8087 → 8092로 변경
+server:
+  port: 8092
+
+# 로깅 설정
+logging:
+  level:
+    root: INFO
+    carsmartfactory: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.springframework.cloud: INFO
+    org.springframework.security: DEBUG
+    org.springframework.web: DEBUG
+    org.springframework.cloud.stream: DEBUG  # Stream 디버깅 추가
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# Management/Actuator 설정
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  info:
+    env:
+      enabled: true
+
+---
+# ========================================
+# DOCKER PROFILE (컨테이너 환경)
+# ========================================
+spring:
+  config:
+    activate:
+      on-profile: docker
+
+  # PostgreSQL Docker 연결 설정
+  datasource:
+    url: jdbc:postgresql://postgres:5432/smartfactory
+    username: postgres
+    password: password
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      connection-timeout: 20000
+      maximum-pool-size: 15
+      minimum-idle: 5
+      idle-timeout: 300000
+      max-lifetime: 1200000
+
+  # JPA 설정 (프로덕션)
+  jpa:
+    hibernate:
+      ddl-auto: update
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+        implicit-strategy: org.hibernate.boot.model.naming.ImplicitNamingStrategyLegacyHbmImpl
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        show_sql: false
+        format_sql: false
+        jdbc:
+          lob:
+            non_contextual_creation: true
+        temp:
+          use_jdbc_metadata_defaults: false
+    show-sql: false
+    open-in-view: false
+
+  # Kafka 설정 (Docker) - Spring Cloud Stream 4.x 방식
+  cloud:
+    stream:
+      # 함수형 바인딩 설정 - Docker 환경
+      function:
+        definition: eventIn;rawDataOut;defectDataOut
+      kafka:
+        binder:
+          brokers: kafka:9092
+          auto-create-topics: true
+        streams:
+          binder:
+            configuration:
+              default:
+                key:
+                  serde: org.apache.kafka.common.serialization.Serdes$StringSerde
+                value:
+                  serde: org.apache.kafka.common.serialization.Serdes$StringSerde
+      bindings:
+        # 기존 바인딩
+        eventIn-in-0:
+          destination: carsmartfactory
+          group: pressdefectmonitoring
+          contentType: application/json
+        eventOut-out-0:
+          destination: carsmartfactory
+          contentType: application/json
+          
+        # 새로운 토픽들
+        rawDataOut-out-0:
+          destination: raw-data-received
+          contentType: application/json
+        defectDataOut-out-0:
+          destination: defect-data-detected
+          contentType: application/json
+
+# 서버 포트 (Docker 내부)
+server:
+  port: 8080
+
+# 로깅 설정 (프로덕션)
+logging:
+  level:
+    root: WARN
+    carsmartfactory: INFO
+    org.hibernate: WARN
+    org.springframework: WARN
+
+---
+# ========================================
+# PRODUCTION PROFILE (Azure 배포환경)
+# ========================================
+spring:
+  config:
+    activate:
+      on-profile: production
+
+  # PostgreSQL Azure 연결 설정
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://azure-postgres:5432/smartfactory}
+    username: ${DATABASE_USERNAME:postgres}
+    password: ${DATABASE_PASSWORD:password}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      connection-timeout: 30000
+      maximum-pool-size: 20
+      minimum-idle: 10
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  # JPA 설정 (프로덕션)
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        show_sql: false
+        format_sql: false
+        jdbc:
+          lob:
+            non_contextual_creation: true
+    show-sql: false
+    open-in-view: false
+
+  # Kafka 설정 (Azure) - Spring Cloud Stream 4.x 방식
+  cloud:
+    stream:
+      # 함수형 바인딩 설정 - Production 환경
+      function:
+        definition: eventIn;rawDataOut;defectDataOut
+      kafka:
+        binder:
+          brokers: ${KAFKA_BROKERS:azure-kafka:9092}
+        streams:
+          binder:
+            configuration:
+              default:
+                key:
+                  serde: org.apache.kafka.common.serialization.Serdes$StringSerde
+                value:
+                  serde: org.apache.kafka.common.serialization.Serdes$StringSerde
+      bindings:
+        # 기존 바인딩
+        eventIn-in-0:
+          destination: carsmartfactory
+          group: pressdefectmonitoring
+          contentType: application/json
+        eventOut-out-0:
+          destination: carsmartfactory
+          contentType: application/json
+          
+        # 새로운 토픽들
+        rawDataOut-out-0:
+          destination: raw-data-received
+          contentType: application/json
+        defectDataOut-out-0:
+          destination: defect-data-detected
+          contentType: application/json
+
+# 서버 설정
+server:
+  port: 8080
+
+# 로깅 설정 (프로덕션)
+logging:
+  level:
+    root: ERROR
+    carsmartfactory: WARN
+
+# JWT 설정
+jwt:
+  secret: ${JWT_SECRET:smartFactorySecretKeyForProductionEnvironmentUseOnly2024}
+  expiration: 86400000  # 24시간
+
+# 애플리케이션 설정
+app:
+  security:
+    jwt:
+      secret-key: ${JWT_SECRET:smartFactorySecretKeyForProductionEnvironmentUseOnly2024}
+      expiration-time: 86400000
