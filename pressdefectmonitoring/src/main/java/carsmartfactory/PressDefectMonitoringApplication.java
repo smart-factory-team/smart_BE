@@ -1,0 +1,1 @@
+git commit -m "✨ feat: Add domain event for detected prediction results" -m "모델 서비스의 결함 탐지 결과를 수신했을 때 발행되는 이벤트 클래스 추가. Kafka defect-data-detected 토픽으로 발행."
