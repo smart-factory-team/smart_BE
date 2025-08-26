@@ -54,7 +54,7 @@ spring:
         - id: paintingprocessmonitoring
           uri: http://localhost:8087
           predicates:
-            - Path=/paintingSurfaceDefectDetectionLogs/**
+            - Path=/api/painting-surface/**
         - id: assemblyprocessmonitoring
           uri: http://localhost:8090  # 8088 → 8090 변경 (포트 충돌 해결)
           predicates:
