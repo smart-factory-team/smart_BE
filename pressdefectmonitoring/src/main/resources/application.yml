@@ -343,3 +343,5 @@ app:
     jwt:
       secret-key: ${JWT_SECRET:smartFactorySecretKeyForProductionEnvironmentUseOnly2024}
       expiration-time: 86400000
+  model-service:
+    url: http://localhost:8003
