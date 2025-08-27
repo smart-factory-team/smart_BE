@@ -9,6 +9,7 @@ import lombok.*;
 //<<< DDD / Domain Event
 @Data
 @ToString
+@EqualsAndHashCode(callSuper = false)  // ✅ 경고 제거
 public class IssueSolved extends AbstractEvent {
 
     private String id;
