@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 //<<< Clean Arch / Inbound Adaptor
 
 @RestController
-// @RequestMapping(value="/posts")
+@RequestMapping(value="/posts")
 @Transactional
 public class PostController {
 
@@ -29,7 +29,7 @@ public class PostController {
     @Autowired
     UserIdMaskingUtil userIdMaskingUtil;
 
-    @GetMapping("/posts")
+    @GetMapping
     public ResponseEntity<Iterable<Post>> getAllPosts(
         @SortDefault(sort = "createdAt", direction = Sort.Direction.DESC) Sort sort
     ) {
@@ -38,7 +38,7 @@ public class PostController {
         return new ResponseEntity<>(posts, HttpStatus.OK);
     }
 
-    @GetMapping("/posts/{id}")
+    @GetMapping("/{id}")
     public ResponseEntity<Post> getPostById(@PathVariable String id) {
         return postRepository.findById(id).map(post -> {
             post.setUserId(userIdMaskingUtil.maskString(post.getUserId()));
@@ -46,14 +46,14 @@ public class PostController {
         }).orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
-    @PostMapping("/posts")
+    @PostMapping
     public ResponseEntity<Post> createPost(@RequestBody Post post) {
         Post savedPost = postRepository.save(post);
         savedPost.setUserId(userIdMaskingUtil.maskString(savedPost.getUserId()));
         return new ResponseEntity<>(savedPost, HttpStatus.CREATED);
     }
 
-    @PatchMapping("/posts/{id}")
+    @PatchMapping("/{id}")
     public ResponseEntity<Post> updatePost(@PathVariable String id, @RequestBody Map<String, Object> updates) {
         return postRepository.findById(id).map(post -> {
             updates.forEach((key, value) -> {
@@ -70,7 +70,7 @@ public class PostController {
         }).orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
-    @DeleteMapping("/posts/{id}")
+    @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletePost(@PathVariable String id) {
         if (postRepository.existsById(id)) {
             postRepository.deleteById(id);
