@@ -11,12 +11,12 @@ import lombok.*;
 @ToString
 public class PaintingProcessEquipmentDefectSaved extends AbstractEvent {
 
-    private String id;
-    private Long machineId;
+    
+    private String machineId;
     private Date timeStamp;
     private Float thick;
     private Float voltage;
-    private Float ampere;
+    private Float current;
     private Float temper;
     private String issue;
     private Boolean isSolved;

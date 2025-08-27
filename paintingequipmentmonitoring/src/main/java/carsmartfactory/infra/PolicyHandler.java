@@ -17,13 +17,13 @@ import org.springframework.stereotype.Service;
 public class PolicyHandler {
 
     @Autowired
-    PaintingSurfaceDefectDetectionLogRepository paintingSurfaceDefectDetectionLogRepository;
+    PaintingProcessEquipmentDefectDetectionLogRepository paintingProcessEquipmentDefectDetectionLogRepository;
 
     /**
      * Kafka 'carsmartfactory' 토픽에서 들어오는 모든 이벤트 처리 Spring Cloud Stream 4.x 함수형 바인딩 방식 application.yml:
      * spring.cloud.stream.bindings.eventIn-in-0
      */
-    @Bean
+    // @Bean
     public Consumer<Message<String>> eventIn() {
         return message -> {
             try {
@@ -38,11 +38,9 @@ public class PolicyHandler {
                         DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false
                 );
 
-                // 이벤트 타입에 따른 분기 처리
+                // 이벤트 타입에 따른 분기 처리 (기존 로직 유지)
                 if ("IssueSolved".equals(eventType)) {
                     handleIssueSolved(payload, objectMapper);
-                } else if ("PaintingSurfaceDefectSaved".equals(eventType)) {
-                    handlePaintingSurfaceDefectSaved(payload, objectMapper);
                 } else {
                     System.out.println("##### Unknown event type: " + eventType + " #####");
                 }
@@ -61,30 +59,12 @@ public class PolicyHandler {
         try {
             IssueSolved event = objectMapper.readValue(payload, IssueSolved.class);
 
-            // Surface 이슈 해결 정책
-            System.out.println("\n\n##### listener SurfaceIssueSolvedPolicy : " + event + "\n\n");
-            PaintingSurfaceDefectDetectionLog.surfaceIssueSolvedPolicy(event);
+            // Equipment 이슈 해결 정책
+            System.out.println("\n\n##### listener EquipmentIssueSolvedPolicy : " + event + "\n\n");
+            PaintingProcessEquipmentDefectDetectionLog.equipmentIssueSolvedPolicy(event);
 
         } catch (Exception e) {
             System.err.println("##### Error handling IssueSolved: " + e.getMessage() + " #####");
-            e.printStackTrace();
-        }
-    }
-
-
-    /**
-     * PaintingSurfaceDefectSaved 이벤트 처리
-     */
-    private void handlePaintingSurfaceDefectSaved(String payload, ObjectMapper objectMapper) {
-        try {
-            System.out.println("\n\n##### listener PaintingSurfaceDefectSaved : " + payload + "\n\n");
-            
-            // 이벤트 데이터를 파싱하여 필요한 처리 수행
-            // 예: 로깅, 알림, 다른 서비스 호출 등
-            System.out.println("##### 결함 감지 로그가 성공적으로 저장되었습니다 #####");
-            
-        } catch (Exception e) {
-            System.err.println("##### Error handling PaintingSurfaceDefectSaved: " + e.getMessage() + " #####");
             e.printStackTrace();
         }
     }

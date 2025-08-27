@@ -8,6 +8,9 @@ spring:
     exclude:
       - org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
       - org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
+      - org.springframework.boot.autoconfigure.security.reactive.ReactiveSecurityAutoConfiguration
+      - org.springframework.boot.autoconfigure.security.reactive.ReactiveUserDetailsServiceAutoConfiguration
+      - org.springframework.boot.actuate.autoconfigure.security.reactive.ReactiveManagementWebSecurityAutoConfiguration
   security:
     user:
       password: none # Security 비활성화
@@ -22,6 +25,9 @@ spring:
     exclude:
       - org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
       - org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
+      - org.springframework.boot.autoconfigure.security.reactive.ReactiveSecurityAutoConfiguration
+      - org.springframework.boot.autoconfigure.security.reactive.ReactiveUserDetailsServiceAutoConfiguration
+      - org.springframework.boot.actuate.autoconfigure.security.reactive.ReactiveManagementWebSecurityAutoConfiguration
   cloud:
     gateway:
       routes:
@@ -48,7 +54,7 @@ spring:
         - id: paintingprocessmonitoring
           uri: http://localhost:8087
           predicates:
-            - Path=/paintingSurfaceDefectDetectionLogs/**, /paintingProcessEquipmentDefectDetectionLogs/**
+            - Path=/api/painting-surface/**
         - id: assemblyprocessmonitoring
           uri: http://localhost:8090  # 8088 → 8090 변경 (포트 충돌 해결)
           predicates:
@@ -57,6 +63,20 @@ spring:
           uri: http://localhost:8089
           predicates:
             - Path=/weldingMachineDefectDetectionLogs/**
+        - id: paintingequipmentmonitoring
+          uri: http://localhost:8091
+          predicates:
+            - Path=/equipment-data/**, /paintingProcessEquipmentDefectDetectionLogs/**
+        - id: paintingequipmentmonitoring-ws
+          uri: ws://localhost:8091
+          predicates:
+            - Path=/ws/monitoring-data/**
+        - id: painting-equipment-simulator-api
+          uri: http://localhost:8011
+          predicates:
+            - Path=/simulators/painting-equipment/**
+          filters:
+            - RewritePath=/simulators/painting-equipment/(?<segment>.*), /simulator/${segment}
         - id: frontend
           uri: http://localhost:8080
           predicates:
@@ -72,6 +92,9 @@ spring:
     exclude:
       - org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
       - org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
+      - org.springframework.boot.autoconfigure.security.reactive.ReactiveSecurityAutoConfiguration
+      - org.springframework.boot.autoconfigure.security.reactive.ReactiveUserDetailsServiceAutoConfiguration
+      - org.springframework.boot.actuate.autoconfigure.security.reactive.ReactiveManagementWebSecurityAutoConfiguration
   cloud:
     gateway:
       routes:
@@ -98,7 +121,7 @@ spring:
         - id: paintingprocessmonitoring
           uri: http://paintingprocessmonitoring:8080
           predicates:
-            - Path=/paintingSurfaceDefectDetectionLogs/**, /paintingProcessEquipmentDefectDetectionLogs/**
+            - Path=/paintingSurfaceDefectDetectionLogs/**
         - id: assemblyprocessmonitoring
           uri: http://assemblyprocessmonitoring:8080
           predicates:
@@ -107,6 +130,21 @@ spring:
           uri: http://weldingprocessmonitoring:8080
           predicates:
             - Path=/weldingMachineDefectDetectionLogs/**
+        - id: paintingequipmentmonitoring
+          uri: http://paintingequipmentmonitoring:8080
+          predicates:
+            - Path=/equipment-data/**, /paintingProcessEquipmentDefectDetectionLogs/**
+        - id: paintingequipmentmonitoring-ws
+          uri: ws://paintingequipmentmonitoring:8080
+          predicates:
+            - Path=/ws/monitoring-data/**
+            - Scheme=ws,wss
+        - id: painting-equipment-simulator-api
+          uri: http://simulator-service:8011
+          predicates:
+            - Path=/simulators/painting-equipment/**
+          filters:
+            - RewritePath=/simulators/painting-equipment/(?<segment>.*), /simulator/${segment}
         - id: frontend
           uri: http://frontend:8080
           predicates:
@@ -122,6 +160,9 @@ spring:
     exclude:
       - org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
       - org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
+      - org.springframework.boot.autoconfigure.security.reactive.ReactiveSecurityAutoConfiguration
+      - org.springframework.boot.autoconfigure.security.reactive.ReactiveUserDetailsServiceAutoConfiguration
+      - org.springframework.boot.actuate.autoconfigure.security.reactive.ReactiveManagementWebSecurityAutoConfiguration
   cloud:
     gateway:
       httpclient:
@@ -149,10 +190,18 @@ spring:
           uri: http://chatbot.smart-be.svc.cluster.local:8080
           predicates:
             - Path=/agentSessions/**, /issues/**
+        - id: paintingequipmentmonitoring
+          uri: http://paintingequipmentmonitoring.smart-be.svc.cluster.local:8080
+          predicates:
+            - Path=/equipment-data/**, /paintingProcessEquipmentDefectDetectionLogs/**
+        - id: paintingequipmentmonitoring-ws
+          uri: ws://paintingequipmentmonitoring.smart-be.svc.cluster.local:8080
+          predicates:
+            - Path=/ws/monitoring-data/**
         - id: paintingprocessmonitoring
           uri: http://paintingprocessmonitoring.smart-be.svc.cluster.local:8080
           predicates:
-            - Path=/paintingSurfaceDefectDetectionLogs/**, /paintingProcessEquipmentDefectDetectionLogs/**
+            - Path=/paintingSurfaceDefectDetectionLogs/**
         - id: assemblyprocessmonitoring
           uri: http://assemblyprocessmonitoring.smart-be.svc.cluster.local:8080
           predicates:
@@ -227,6 +276,12 @@ spring:
             - RewritePath=/api/v1/vehicle/assembly/defect/(?<segment>.*), /${segment}
 
         # ===== Data Simulators =====
+        - id: painting-equipment-simulator-api
+          uri: http://sf-painting-process-data-simulator-service.sf-painting-process-data-simulator-service.svc.cluster.local:80
+          predicates:
+            - Path=/simulators/painting-equipment/**
+          filters:
+            - RewritePath=/simulators/painting-equipment/(?<segment>.*), /simulator/${segment}
         - id: painting-process-simulator-api
           uri: http://sf-painting-process-data-simulator-service.sf-painting-process-data-simulator-service.svc.cluster.local:80
           predicates:

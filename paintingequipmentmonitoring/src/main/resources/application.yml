@@ -4,19 +4,8 @@ server:
 spring:
   application:
     name: paintingprocessmonitoring
-
   profiles:
     active: default
-
-# 도장표면결함탐지 관련 서비스 URL 설정
-painting:
-  surface:
-    model:
-      service:
-        url: http://localhost:8002
-    simulator:
-      service:
-        url: http://localhost:8012
 
 ---
 # ========================================
@@ -26,8 +15,6 @@ spring:
   config:
     activate:
       on-profile: default
-
-  # PostgreSQL 로컬 연결 설정
   datasource:
     url: jdbc:postgresql://localhost:5432/smartfactory
     username: postgres
@@ -41,7 +28,7 @@ spring:
       max-lifetime: 1200000
       auto-commit: false
 
-  # JPA 설정
+  # JPA 설정    
   jpa:
     hibernate:
       ddl-auto: update
@@ -68,10 +55,11 @@ spring:
 
   # Kafka 설정 (로컬) - Spring Cloud Stream 4.x 방식
   cloud:
+    function:
+      scan:
+        enabled: false
+      definition: processEquipmentData;processModelResult
     stream:
-      # 함수형 바인딩 설정 (핵심 추가!)
-      function:
-        definition: eventIn  # PolicyHandler의 @Bean 메서드명과 일치
       kafka:
         binder:
           brokers: localhost:9092
@@ -89,20 +77,20 @@ spring:
                 interval:
                   ms: 1000
       bindings:
-        # 함수형 바인딩 - eventIn 함수와 연결
-        eventIn-in-0: # 패턴: {함수명}-in-{인덱스}
-          destination: carsmartfactory
-          group: paintingprocessmonitoring
-          contentType: application/json
-          consumer:
-            max-attempts: 3
-            back-off-initial-interval: 1000
-        # 출력용 (필요시)
-        eventOut-out-0: # 패턴: {함수명}-out-{인덱스}
-          destination: carsmartfactory
-          contentType: application/json
-          producer:
-            partition-count: 3
+        # 토픽 A -> 모델 서비스 호출용
+        processEquipmentData-in-0:
+          destination: equipment-data-topic
+          group: paintingequipmentmonitoring-processor
+        # 토픽 B -> DB 저장용
+        processModelResult-in-0:
+          destination: model-result-topic
+          group: paintingprocessmonitoring-saver
+
+        # 데이터 발행용 바인딩들
+        equipmentDataOut-out-0:
+          destination: equipment-data-topic
+        modelResultOut-out-0:
+          destination: model-result-topic
 
   # Security 설정
   security:
@@ -111,9 +99,13 @@ spring:
       password: admin123
       roles: ADMIN
 
-# 서버 포트 (로컬 개발시 Gateway와 다른 포트)
+feign:
+  client:
+    model-service:
+      url: http://localhost:8001
+
 server:
-  port: 8087
+  port: 8091
 
 # 로깅 설정
 logging:
@@ -124,6 +116,8 @@ logging:
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
     org.springframework.cloud: INFO
     org.springframework.security: DEBUG
+    org.springframework.transaction: DEBUG
+    org.springframework.orm.jpa: DEBUG
     org.springframework.web: DEBUG
     org.springframework.cloud.stream: DEBUG  # Stream 디버깅 추가
   pattern:
@@ -151,10 +145,8 @@ spring:
   config:
     activate:
       on-profile: docker
-
-  # PostgreSQL Docker 연결 설정
   datasource:
-    url: jdbc:postgresql://smart-factory-postgres:5432/smartfactory
+    url: jdbc:postgresql://postgres:5432/smartfactory
     username: postgres
     password: password
     driver-class-name: org.postgresql.Driver
@@ -164,8 +156,6 @@ spring:
       minimum-idle: 5
       idle-timeout: 300000
       max-lifetime: 1200000
-
-  # JPA 설정 (프로덕션)
   jpa:
     hibernate:
       ddl-auto: update
@@ -187,10 +177,11 @@ spring:
 
   # Kafka 설정 (Docker) - Spring Cloud Stream 4.x 방식
   cloud:
+    function:
+      scan:
+        enabled: false
+      definition: processEquipmentData;processModelResult
     stream:
-      # 함수형 바인딩 설정
-      function:
-        definition: eventIn
       kafka:
         binder:
           brokers: kafka:9092
@@ -204,16 +195,23 @@ spring:
                 value:
                   serde: org.apache.kafka.common.serialization.Serdes$StringSerde
       bindings:
-        # 함수형 바인딩
-        eventIn-in-0:
-          destination: carsmartfactory
-          group: paintingprocessmonitoring
-          contentType: application/json
-        eventOut-out-0:
-          destination: carsmartfactory
-          contentType: application/json
+        processEquipmentData-in-0:
+          destination: equipment-data-topic
+          group: paintingequipmentmonitoring-processor
+        processModelResult-in-0:
+          destination: model-result-topic
+          group: paintingprocessmonitoring-saver
 
-# 서버 포트 (Docker 내부)
+        equipmentDataOut-out-0:
+          destination: equipment-data-topic
+        modelResultOut-out-0:
+          destination: model-result-topic
+
+feign:
+  client:
+    model-service:
+      url: http://model-service:8001
+
 server:
   port: 8080
 
@@ -224,6 +222,7 @@ logging:
     carsmartfactory: INFO
     org.hibernate: WARN
     org.springframework: WARN
+
 ---
 # ========================================
 # PRODUCTION PROFILE (Azure 배포환경)
@@ -263,10 +262,11 @@ spring:
 
   # Kafka 설정 (Azure) - Spring Cloud Stream 4.x 방식
   cloud:
+    function:
+      scan:
+        enabled: false
+      definition: processEquipmentData;processModelResult
     stream:
-      # 함수형 바인딩 설정
-      function:
-        definition: eventIn
       kafka:
         binder:
           brokers: ${KAFKA_BROKERS:azure-kafka:9092}
@@ -279,14 +279,22 @@ spring:
                 value:
                   serde: org.apache.kafka.common.serialization.Serdes$StringSerde
       bindings:
-        # 함수형 바인딩
-        eventIn-in-0:
-          destination: carsmartfactory
-          group: paintingprocessmonitoring
-          contentType: application/json
-        eventOut-out-0:
-          destination: carsmartfactory
-          contentType: application/json
+        processEquipmentData-in-0:
+          destination: equipment-data-topic
+          group: paintingequipmentmonitoring-processor
+        processModelResult-in-0:
+          destination: model-result-topic
+          group: paintingprocessmonitoring-saver
+
+        equipmentDataOut-out-0:
+          destination: equipment-data-topic
+        modelResultOut-out-0:
+          destination: model-result-topic
+
+feign:
+  client:
+    model-service:
+      url: http://model-service:8001
 
 # 서버 설정
 server:
@@ -302,10 +310,10 @@ logging:
 jwt:
   secret: ${JWT_SECRET:smartFactorySecretKeyForProductionEnvironmentUseOnly2024}
   expiration: 86400000  # 24시간
+
 # 애플리케이션 설정
 app:
   security:
     jwt:
       secret-key: ${JWT_SECRET:smartFactorySecretKeyForProductionEnvironmentUseOnly2024}
       expiration-time: 86400000
-
