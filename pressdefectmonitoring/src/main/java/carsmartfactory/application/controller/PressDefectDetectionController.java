@@ -1,5 +1,7 @@
 package carsmartfactory.application.controller;
 
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import carsmartfactory.application.controller.request.PressDefectDataRequestDto;
 import carsmartfactory.application.controller.response.PressDefectResultResponseDto;
 import carsmartfactory.domain.event.PressDefectDataReceivedEvent;
@@ -49,11 +51,11 @@ public class PressDefectDetectionController {
             @Valid @RequestBody PressDefectDataRequestDto request) {
         
         try {
-            log.info("🔄 시뮬레이터로부터 원시 데이터 수신: {}", request.getSummary());
+            log.info("시뮬레이터로부터 원시 데이터 수신: {}", request.getSummary());
             
             // 1. 요청 유효성 검증
             if (!request.isValid()) {
-                log.warn("⚠️ 유효하지 않은 요청 데이터: {}", request.getInspectionId());
+                log.warn("유효하지 않은 요청 데이터: {}", request.getInspectionId());
                 return createErrorResponse("유효하지 않은 요청 데이터입니다", HttpStatus.BAD_REQUEST);
             }
             
@@ -68,13 +70,13 @@ public class PressDefectDetectionController {
             
             // 3. 이벤트 유효성 검증
             if (!event.validate()) {
-                log.error("❌ 이벤트 유효성 검증 실패: {}", event.getInspectionId());
+                log.error("이벤트 유효성 검증 실패: {}", event.getInspectionId());
                 return createErrorResponse("이벤트 생성에 실패했습니다", HttpStatus.INTERNAL_SERVER_ERROR);
             }
             
             // 4. Kafka 토픽으로 이벤트 발행
             event.publishToRawDataTopic();
-            log.info("✅ 원시 데이터 이벤트 발행 완료: {}", event.getSummary());
+            log.info("원시 데이터 이벤트 발행 완료: {}", event.getSummary());
             
             // 5. 이벤트 발행 즉시 FastAPI 모델 서비스 호출
             callModelServiceForPrediction(request);
@@ -91,90 +93,9 @@ public class PressDefectDetectionController {
             return ResponseEntity.ok(response);
             
         } catch (Exception e) {
-            log.error("💥 원시 데이터 처리 중 오류 발생: {}", e.getMessage(), e);
+            log.error("원시 데이터 처리 중 오류 발생: {}", e.getMessage(), e);
             return createErrorResponse(
                 "원시 데이터 처리 중 오류가 발생했습니다: " + e.getMessage(), 
-                HttpStatus.INTERNAL_SERVER_ERROR
-            );
-        }
-    }
-    
-    /**
-     * 모델 서비스로부터 예측 결과 수신
-     * 
-     * @param request 예측 결과 요청 DTO
-     * @return 수신 확인 응답
-     */
-    @PostMapping("/prediction-result")
-    public ResponseEntity<Map<String, Object>> receivePredictionResult(
-            @Valid @RequestBody PressDefectResultResponseDto request) {
-        
-        try {
-            log.info("🤖 모델 서비스로부터 예측 결과 수신: {}", 
-                    request.getInspectionInfo() != null ? request.getInspectionInfo().getInspectionId() : "unknown");
-            
-            // 1. 요청 유효성 검증
-            if (!Boolean.TRUE.equals(request.getSuccess())) {
-                log.warn("⚠️ 예측 실패 결과 수신: {}", request.getError());
-                return createErrorResponse("모델 서비스 예측에 실패했습니다: " + request.getError(), HttpStatus.BAD_REQUEST);
-            }
-            
-            if (request.getFinalJudgment() == null) {
-                log.warn("⚠️ 최종 판정 데이터가 누락됨");
-                return createErrorResponse("최종 판정 데이터가 누락되었습니다", HttpStatus.BAD_REQUEST);
-            }
-            
-            // 2. 결과에 따른 처리
-            String inspectionId = request.getFinalJudgment().getInspectionId();
-            boolean isDefective = request.isDefective();
-            
-            // 3. 웹소켓으로 프론트에 모니터링 데이터 전송 (정상/이상 모두)
-            sendMonitoringDataToFrontend(request);
-            
-            if (isDefective) {
-                // 4-1. 이상 감지시: 이상 이벤트 발행 및 DB 저장
-                log.warn("🚨 결함품 감지됨: {} - 누락된 구멍: {}", 
-                        inspectionId, 
-                        request.getFinalJudgment().getMissingHoles());
-                        
-                // 이상 이벤트 생성 및 발행
-                PressDefectResultDetectedEvent defectEvent = new PressDefectResultDetectedEvent(
-                    request.getFinalJudgment().getInspectionId(),
-                    request.getFinalJudgment().getQualityStatus(),
-                    request.getFinalJudgment().getRecommendation(),
-                    request.getFinalJudgment().getIsComplete(),
-                    request.getFinalJudgment().getMissingHoles(),
-                    request
-                );
-                
-                // Kafka 토픽으로 이상 이벤트 발행
-                defectEvent.publishToDefectDataTopic();
-                log.info("✅ 결함 탐지 결과 이벤트 발행 완료: {}", defectEvent.getSummary());
-                
-                // DB에 저장
-                saveDefectDataToDatabase(defectEvent);
-                
-            } else {
-                // 4-2. 정상품인 경우
-                log.info("✅ 정상품 확인됨: {}", inspectionId);
-            }
-            
-            // 5. 성공 응답 반환
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("message", "예측 결과가 성공적으로 처리되었습니다");
-            response.put("inspectionId", inspectionId);
-            response.put("qualityStatus", request.getFinalJudgment().getQualityStatus());
-            response.put("recommendation", request.getFinalJudgment().getRecommendation());
-            response.put("isDefective", isDefective);
-            response.put("timestamp", Instant.now().toString());
-            
-            return ResponseEntity.ok(response);
-            
-        } catch (Exception e) {
-            log.error("💥 예측 결과 처리 중 오류 발생: {}", e.getMessage(), e);
-            return createErrorResponse(
-                "예측 결과 처리 중 오류가 발생했습니다: " + e.getMessage(), 
                 HttpStatus.INTERNAL_SERVER_ERROR
             );
         }
@@ -185,13 +106,13 @@ public class PressDefectDetectionController {
      */
     private void callModelServiceForPrediction(PressDefectDataRequestDto request) {
         try {
-            log.info("🤖 모델 서비스 호출 시작: {}", request.getInspectionId());
+            log.info("모델 서비스 호출 시작: {}", request.getInspectionId());
             
             // HTTP 헤더 설정
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             
-            // FastAPI 요청 데이터 구성 (InspectionBatchRequest 형식에 맞춤)
+            // FastAPI 요청 데이터 구성
             Map<String, Object> modelRequest = new HashMap<>();
             modelRequest.put("inspection_id", request.getInspectionId());
             
@@ -207,26 +128,58 @@ public class PressDefectDetectionController {
             
             HttpEntity<Map<String, Object>> httpEntity = new HttpEntity<>(modelRequest, headers);
             
-            // 모델 서비스 API 호출 (비동기적으로 처리)
+            // 모델 서비스 API 호출
             String modelApiUrl = modelServiceUrl + "/predict/inspection";
             
-            log.info("📤 모델 서비스 API 호출: {} -> {}", request.getInspectionId(), modelApiUrl);
+            log.info("모델 서비스 API 호출: {} -> {}", request.getInspectionId(), modelApiUrl);
             
-            // 백그라운드에서 비동기 호출 (결과는 /prediction-result로 받음)
-            ResponseEntity<String> response = restTemplate.postForEntity(
+            // 동기 호출 후 응답을 바로 처리
+            ResponseEntity<PressDefectResultResponseDto> response = restTemplate.postForEntity(
                 modelApiUrl, 
                 httpEntity, 
-                String.class
+                PressDefectResultResponseDto.class  // String 대신 DTO로 변경
             );
             
-            if (response.getStatusCode().is2xxSuccessful()) {
-                log.info("✅ 모델 서비스 호출 성공: {} - {}", request.getInspectionId(), response.getStatusCode());
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                log.info("모델 서비스 호출 성공: {} - {}", request.getInspectionId(), response.getStatusCode());
+                
+                PressDefectResultResponseDto result = response.getBody();
+                
+                // 웹소켓으로 프론트에 모니터링 데이터 전송
+                sendMonitoringDataToFrontend(result);
+                
+                // 결함인 경우 이상 이벤트 발행 및 DB 저장
+                if (result.isDefective()) {
+                    log.warn("결함품 감지됨: {} - 누락된 구멍: {}", 
+                            request.getInspectionId(), 
+                            result.getFinalJudgment().getMissingHoles());
+                    
+                    // 이상 이벤트 생성 및 발행
+                    PressDefectResultDetectedEvent defectEvent = new PressDefectResultDetectedEvent(
+                        result.getFinalJudgment().getInspectionId(),
+                        result.getFinalJudgment().getQualityStatus(),
+                        result.getFinalJudgment().getRecommendation(),
+                        result.getFinalJudgment().getIsComplete(),
+                        result.getFinalJudgment().getMissingHoles(),
+                        result
+                    );
+                    
+                    // Kafka 토픽으로 이상 이벤트 발행
+                    defectEvent.publishToDefectDataTopic();
+                    log.info("결함 탐지 결과 이벤트 발행 완료: {}", defectEvent.getSummary());
+                    
+                    // DB에 저장
+                    saveDefectDataToDatabase(defectEvent);
+                } else {
+                    log.info("정상품 확인됨: {}", request.getInspectionId());
+                }
+                
             } else {
-                log.warn("⚠️ 모델 서비스 응답 상태: {} - {}", response.getStatusCode(), response.getBody());
+                log.warn("모델 서비스 응답 상태: {} - {}", response.getStatusCode(), response.getBody());
             }
             
         } catch (Exception e) {
-            log.error("💥 모델 서비스 호출 실패: {} - {}", request.getInspectionId(), e.getMessage(), e);
+            log.error("모델 서비스 호출 실패: {} - {}", request.getInspectionId(), e.getMessage(), e);
         }
     }
     
@@ -235,17 +188,17 @@ public class PressDefectDetectionController {
      */
     private void sendMonitoringDataToFrontend(PressDefectResultResponseDto result) {
         try {
-            log.info("📡 프론트엔드로 모니터링 데이터 전송: {}", 
+            log.info("프론트엔드로 모니터링 데이터 전송: {}", 
                     result.getFinalJudgment().getInspectionId());
             
-            // TODO: 웹소켓 서비스 구현 필요
-            // webSocketService.sendMonitoringData(result);
+            // 웹소켓 서비스를 통해 모니터링 데이터 전송
+            webSocketService.sendMonitoringData(result);
             
-            log.info("✅ 모니터링 데이터 전송 완료: {}", 
+            log.info("모니터링 데이터 전송 완료: {}", 
                     result.getFinalJudgment().getInspectionId());
                     
         } catch (Exception e) {
-            log.error("💥 모니터링 데이터 전송 실패: {} - {}", 
+            log.error("모니터링 데이터 전송 실패: {} - {}", 
                     result.getFinalJudgment().getInspectionId(), e.getMessage(), e);
         }
     }
@@ -255,15 +208,19 @@ public class PressDefectDetectionController {
      */
     private void saveDefectDataToDatabase(PressDefectResultDetectedEvent event) {
         try {
-            log.info("💾 결함 데이터 DB 저장 시작: {}", event.getInspectionId());
+            log.info("결함 데이터 DB 저장 시작: {}", event.getInspectionId());
             
-            // TODO: Repository를 통한 DB 저장 구현 필요
-            // pressDefectDetectionLogRepository.save(event.toEntity());
+            // 이벤트를 엔티티로 변환
+            PressDefectDetectionLog logEntity = PressDefectDetectionLog.fromEvent(event);
             
-            log.info("✅ 결함 데이터 DB 저장 완료: {}", event.getInspectionId());
+            // Repository를 통해 DB 저장
+            defectLogRepository.save(logEntity);
+            
+            log.info("결함 데이터 DB 저장 완료: {}", event.getInspectionId());
             
         } catch (Exception e) {
-            log.error("💥 결함 데이터 DB 저장 실패: {} - {}", event.getInspectionId(), e.getMessage(), e);
+            log.error("결함 데이터 DB 저장 실패: {} - {}", event.getInspectionId(), e.getMessage(), e);
+            throw new RuntimeException("결함 데이터 저장에 실패했습니다", e);
         }
     }
     
@@ -278,7 +235,6 @@ public class PressDefectDetectionController {
         status.put("timestamp", Instant.now().toString());
         status.put("endpoints", List.of(
             "POST /api/press-defect/raw-data - 시뮬레이터 데이터 수신",
-            "POST /api/press-defect/prediction-result - 모델 서비스 결과 수신",
             "GET /api/press-defect/status - API 상태 확인"
         ));
         
@@ -316,10 +272,23 @@ public class PressDefectDetectionController {
      */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleException(Exception e) {
-        log.error("🔥 Controller 예외 발생: {}", e.getMessage(), e);
+        log.error("Controller 예외 발생: {}", e.getMessage(), e);
         return createErrorResponse(
             "서버 내부 오류가 발생했습니다: " + e.getMessage(), 
             HttpStatus.INTERNAL_SERVER_ERROR
         );
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<Map<String, Object>> handleValidationException(MethodArgumentNotValidException e) {
+        log.error("요청 데이터 검증 실패: {}", e.getMessage());
+        return createErrorResponse("요청 데이터가 유효하지 않습니다: " + e.getBindingResult().getFieldError().getDefaultMessage(), 
+                                HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<Map<String, Object>> handleJsonException(HttpMessageNotReadableException e) {
+        log.error("JSON 파싱 실패: {}", e.getMessage());
+        return createErrorResponse("JSON 형식이 올바르지 않습니다", HttpStatus.BAD_REQUEST);
     }
 }
