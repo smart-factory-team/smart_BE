@@ -61,7 +61,7 @@ spring:
     stream:
       # 함수형 바인딩 설정 - 새로운 이벤트 처리 함수들 추가
       function:
-        definition: eventIn;rawDataOut;defectDataOut  # 3개 함수 정의
+        definition: rawDataOut;defectDataOut # eventIn 제거
       kafka:
         binder:
           brokers: localhost:9092
