@@ -4,6 +4,7 @@ import carsmartfactory.AssemblyprocessmonitoringApplication;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.messaging.MessageHeaders;
 import org.springframework.messaging.support.MessageBuilder;
@@ -16,6 +17,8 @@ public class AbstractEvent {
 
     String eventType;
     Long timestamp;
+    @Value("${spring.cloud.stream.bindings.eventOut-out-0.destination:eventOut-out-0}")
+    private String eventDestination;
 
     public AbstractEvent(Object aggregate) {
         this();
@@ -37,7 +40,7 @@ public class AbstractEvent {
             );
 
             streamBridge.send(
-                    "eventOut-out-0", // application.yml의 바인딩명과 일치
+                    eventDestination, // application.yml의 바인딩명과 일치
                     MessageBuilder
                             .withPayload(this)
                             .setHeader(

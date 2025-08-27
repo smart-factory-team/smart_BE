@@ -17,7 +17,7 @@ import org.springframework.stereotype.Service;
 public class PolicyHandler {
 
     @Autowired
-    VehicleAssemblyProcessDefectDetectionLogRepository vehicleAssemblyProcessDefectDetectionLogRepository;
+    DefectDetectionLogRepository defectDetectionLogRepository;
 
     /**
      * Kafka 'carsmartfactory' 토픽에서 들어오는 모든 이벤트 처리 Spring Cloud Stream 4.x 함수형 바인딩 방식 application.yml:
@@ -62,7 +62,7 @@ public class PolicyHandler {
             System.out.println("\n\n##### listener IssueSolvedPolicy : " + event + "\n\n");
 
             // 기존 비즈니스 로직 실행
-            VehicleAssemblyProcessDefectDetectionLog.issueSolvedPolicy(event);
+            DefectDetectionLog.issueSolvedPolicy(event);
 
         } catch (Exception e) {
             System.err.println("##### Error handling IssueSolved: " + e.getMessage() + " #####");

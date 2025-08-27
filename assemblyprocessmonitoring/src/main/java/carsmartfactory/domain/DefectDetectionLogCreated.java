@@ -1,8 +1,7 @@
 package carsmartfactory.domain;
 
-import carsmartfactory.domain.*;
 import carsmartfactory.infra.AbstractEvent;
-import java.time.LocalDate;
+
 import java.util.*;
 import lombok.*;
 
@@ -25,9 +24,10 @@ public class DefectDetectionLogCreated extends AbstractEvent {
     private Boolean isSolved;
 
     public DefectDetectionLogCreated(
-        VehicleAssemblyProcessDefectDetectionLog aggregate
+        DefectDetectionLog aggregate
     ) {
         super(aggregate);
+
     }
 
     public DefectDetectionLogCreated() {

@@ -1,30 +1,28 @@
 package carsmartfactory.domain;
 
 import carsmartfactory.AssemblyprocessmonitoringApplication;
-import carsmartfactory.domain.DefectDetectionLogCreated;
-import carsmartfactory.domain.IssueSolved;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.time.LocalDate;
-import java.util.Collections;
+
 import java.util.Date;
-import java.util.List;
-import java.util.Map;
 // javax → jakarta 패키지 변경
 import jakarta.persistence.*;
 import lombok.Data;
+import org.hibernate.annotations.GenericGenerator;
 
 @Entity
 @Table(name = "VehicleAssemblyProcessDefectDetectionLog_table")
 @Data
 //<<< DDD / Aggregate Root
-public class VehicleAssemblyProcessDefectDetectionLog {
+public class DefectDetectionLog {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(generator = "uuid2")
+    @GenericGenerator(name = "uuid2", strategy = "uuid2")
     private String id;
 
+    @Column(nullable = false)
     private Long machineId;
 
+    @Column(nullable = false)
     private Date timeStamp;
 
     private String part;
@@ -50,14 +48,7 @@ public class VehicleAssemblyProcessDefectDetectionLog {
         DefectDetectionLogCreated defectDetectionLogCreated = new DefectDetectionLogCreated(
                 this
         );
-        defectDetectionLogCreated.publishAfterCommit();
-    }
-
-    public static VehicleAssemblyProcessDefectDetectionLogRepository repository() {
-        VehicleAssemblyProcessDefectDetectionLogRepository vehicleAssemblyProcessDefectDetectionLogRepository = AssemblyprocessmonitoringApplication.applicationContext.getBean(
-                VehicleAssemblyProcessDefectDetectionLogRepository.class
-        );
-        return vehicleAssemblyProcessDefectDetectionLogRepository;
+        //defectDetectionLogCreated.publishAfterCommit();
     }
 
     //<<< Clean Arch / Port Method
