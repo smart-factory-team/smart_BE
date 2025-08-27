@@ -12,6 +12,9 @@ import io.hypersistence.utils.hibernate.type.json.JsonType;
 import org.hibernate.annotations.Type;
 
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 
 /**
@@ -131,13 +134,43 @@ public class PressDefectDetectionLog {
                 .isDefective(event.isDefective())
                 .isNormal(event.isNormal())
                 .detectedTimestamp(event.getDetectedTimestamp() != null ? 
-                    LocalDateTime.parse(event.getDetectedTimestamp().replace("Z", "")) : 
+                    parseTimestamp(event.getDetectedTimestamp()) : 
                     LocalDateTime.now())
                 .source(event.getSource())
                 .processingTimeSeconds(event.getProcessingTimeSeconds())
                 .metadata(event.getMetadata())
                 .predictionResult(event.getPredictionResult())
                 .build();
+    }
+
+    /**
+     * ISO 8601 타임스탬프를 LocalDateTime으로 변환
+     */
+    private static LocalDateTime parseTimestamp(String timestamp) {
+        try {
+            // ISO 8601 형식을 다양하게 처리
+            if (timestamp.contains("T")) {
+                // 2024-01-01T10:00:00Z 또는 2024-01-01T10:00:00.123Z 형태
+                if (timestamp.endsWith("Z")) {
+                    // UTC 시간을 LocalDateTime으로 변환 (Z 제거)
+                    String localTimeString = timestamp.substring(0, timestamp.length() - 1);
+                    return LocalDateTime.parse(localTimeString);
+                } else if (timestamp.contains("+") || timestamp.lastIndexOf('-') > 10) {
+                    // 타임존 정보가 있는 경우 (2024-01-01T10:00:00+09:00)
+                    OffsetDateTime offsetDateTime = OffsetDateTime.parse(timestamp);
+                    return offsetDateTime.toLocalDateTime();
+                } else {
+                    // 이미 LocalDateTime 형식
+                    return LocalDateTime.parse(timestamp);
+                }
+            } else {
+                // 기본 LocalDateTime 형식으로 시도
+                return LocalDateTime.parse(timestamp);
+            }
+        } catch (DateTimeParseException e) {
+            // 파싱 실패시 현재 시간 반환
+            return LocalDateTime.now();
+        }
     }
 
     /**
