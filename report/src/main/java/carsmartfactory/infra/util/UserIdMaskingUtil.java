@@ -4,10 +4,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class UserIdMaskingUtil {
-    /**
-     * 일반 문자열 아이디 마스킹
-     * 예: testuser -> t****ser
-     */
+    //문자열 마스킹
     public String maskString(String userId) {
         if (userId == null || userId.length() <= 2) {
             return userId;

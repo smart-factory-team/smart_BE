@@ -34,7 +34,6 @@ public class PostController {
         @SortDefault(sort = "createdAt", direction = Sort.Direction.DESC) Sort sort
     ) {
         Iterable<Post> posts = postRepository.findAll(sort);
-        // Mask userId for each post before sending the response
         posts.forEach(post -> post.setUserId(userIdMaskingUtil.maskString(post.getUserId())));
         return new ResponseEntity<>(posts, HttpStatus.OK);
     }
@@ -42,7 +41,6 @@ public class PostController {
     @GetMapping("/posts/{id}")
     public ResponseEntity<Post> getPostById(@PathVariable String id) {
         return postRepository.findById(id).map(post -> {
-            // Mask the userId only for the response
             post.setUserId(userIdMaskingUtil.maskString(post.getUserId()));
             return new ResponseEntity<>(post, HttpStatus.OK);
         }).orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
@@ -50,9 +48,7 @@ public class PostController {
 
     @PostMapping("/posts")
     public ResponseEntity<Post> createPost(@RequestBody Post post) {
-        // Save the post with the original userId
         Post savedPost = postRepository.save(post);
-        // Mask the userId only for the response
         savedPost.setUserId(userIdMaskingUtil.maskString(savedPost.getUserId()));
         return new ResponseEntity<>(savedPost, HttpStatus.CREATED);
     }
@@ -68,9 +64,7 @@ public class PostController {
                     post.setContent((String) value);
                 }
             });
-            // Save the post with original data
             Post updatedPost = postRepository.save(post);
-            // Mask the userId only for the response
             updatedPost.setUserId(userIdMaskingUtil.maskString(updatedPost.getUserId()));
             return new ResponseEntity<>(updatedPost, HttpStatus.OK);
         }).orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));

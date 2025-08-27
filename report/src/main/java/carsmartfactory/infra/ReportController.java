@@ -31,7 +31,6 @@ public class ReportController {
 
     // 테스트용 하드코딩된 경로
     private static final String UPLOAD_PATH = "C:/Users/User/BigProject/reports";
-    private static final String BASE_URL = "http://localhost:8080/api/files";
 
     @Autowired
     ReportRepository reportRepository;
