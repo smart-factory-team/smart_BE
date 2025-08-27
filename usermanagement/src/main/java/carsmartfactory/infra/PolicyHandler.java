@@ -25,16 +25,24 @@ public class PolicyHandler {
     UserRegisterationRepository userRegisterationRepository;
 
     /**
-     * Kafka 'carsmartfactory' 토픽에서 들어오는 모든 이벤트 처리 application.yml: spring.cloud.stream.bindings.event-in
+     * Kafka 'event-out' 토픽에서 들어오는 모든 이벤트 처리 application.yml: spring.cloud.stream.bindings.eventIn-in-0
      */
     @Bean
     public Consumer<Message<String>> eventIn() {
         return message -> {
             try {
                 String payload = message.getPayload();
-                String eventType = (String) message.getHeaders().get("eventType");
 
-                System.out.println("\n\n##### Received Event: " + eventType + " #####");
+                // 헤더에서 이벤트 타입 찾기 (approvalmanagement와 동일한 방식)
+                String eventType = null;
+                if (message.getHeaders().get("type") != null) {
+                    eventType = (String) message.getHeaders().get("type");
+                } else if (message.getHeaders().get("eventType") != null) {
+                    eventType = (String) message.getHeaders().get("eventType");
+                }
+
+                System.out.println("\n\n##### [UserManagement] Received Event: " + eventType + " #####");
+                System.out.println("##### Headers: " + message.getHeaders() + " #####");
                 System.out.println("##### Payload: " + payload + " #####\n\n");
 
                 ObjectMapper objectMapper = new ObjectMapper();
@@ -47,12 +55,16 @@ public class PolicyHandler {
                     handleUserRegistrationApproved(payload, objectMapper);
                 } else if ("UserRegistrationRejected".equals(eventType)) {
                     handleUserRegistrationRejected(payload, objectMapper);
+                } else if ("UserRegistered".equals(eventType)) {
+                    System.out.println("##### [UserManagement] Ignoring self-generated UserRegistered event #####");
+                } else if ("ApprovalRequestRegistered".equals(eventType)) {
+                    System.out.println("##### [UserManagement] Ignoring ApprovalRequestRegistered event #####");
                 } else {
-                    System.out.println("##### Unknown event type: " + eventType + " #####");
+                    System.out.println("##### [UserManagement] Unknown event type: " + eventType + " #####");
                 }
 
             } catch (Exception e) {
-                System.err.println("##### Error processing event: " + e.getMessage() + " #####");
+                System.err.println("##### [UserManagement] Error processing event: " + e.getMessage() + " #####");
                 e.printStackTrace();
             }
         };
@@ -68,13 +80,19 @@ public class PolicyHandler {
                     UserRegistrationApproved.class
             );
 
-            System.out.println("\n\n##### listener EnableUserAccount : " + event + "\n\n");
+            System.out.println(
+                    "\n\n##### [UserManagement] listener EnableUserAccount : " + event.getEmail() + " #####");
 
             // 비즈니스 로직 실행
             User.enableUserAccount(event);
 
+            System.out.println(
+                    "##### [UserManagement] UserRegistrationApproved processed successfully: " + event.getEmail()
+                            + " #####\n\n");
+
         } catch (Exception e) {
-            System.err.println("##### Error handling UserRegistrationApproved: " + e.getMessage() + " #####");
+            System.err.println(
+                    "##### [UserManagement] Error handling UserRegistrationApproved: " + e.getMessage() + " #####");
             e.printStackTrace();
         }
     }
@@ -89,13 +107,19 @@ public class PolicyHandler {
                     UserRegistrationRejected.class
             );
 
-            System.out.println("\n\n##### listener DisableUserAccount : " + event + "\n\n");
+            System.out.println(
+                    "\n\n##### [UserManagement] listener DisableUserAccount : " + event.getEmail() + " #####");
 
             // 비즈니스 로직 실행
             User.disableUseAccount(event);
 
+            System.out.println(
+                    "##### [UserManagement] UserRegistrationRejected processed successfully: " + event.getEmail()
+                            + " #####\n\n");
+
         } catch (Exception e) {
-            System.err.println("##### Error handling UserRegistrationRejected: " + e.getMessage() + " #####");
+            System.err.println(
+                    "##### [UserManagement] Error handling UserRegistrationRejected: " + e.getMessage() + " #####");
             e.printStackTrace();
         }
     }
@@ -107,9 +131,6 @@ public class PolicyHandler {
         try {
             userRegisterationRepository.findById(userRegistrationId)
                     .ifPresent(registration -> {
-                        // UserRegistration 업데이트
-                        // registration.approve(approvedBy); // 승인 메서드가 있다면
-
                         // User 테이블로 데이터 이동
                         User newUser = new User();
                         newUser.setId(registration.getId());
@@ -125,11 +146,12 @@ public class PolicyHandler {
                         userRepository.save(newUser);
 
                         System.out.println(
-                                "##### User approved and moved to User table: " + newUser.getEmail() + " #####");
+                                "##### [UserManagement] User approved and moved to User table: " + newUser.getEmail()
+                                        + " #####");
                     });
 
         } catch (Exception e) {
-            System.err.println("##### Error processing user approval: " + e.getMessage() + " #####");
+            System.err.println("##### [UserManagement] Error processing user approval: " + e.getMessage() + " #####");
             e.printStackTrace();
         }
     }
@@ -141,18 +163,14 @@ public class PolicyHandler {
         try {
             userRegisterationRepository.findById(userRegistrationId)
                     .ifPresent(registration -> {
-                        // UserRegistration 상태 업데이트만 (User 테이블로 이동하지 않음)
-                        // registration.reject(rejectedBy, reason); // 거부 메서드가 있다면
-
-                        System.out.println("##### User registration rejected: " + registration.getEmail() +
-                                " by " + rejectedBy + " reason: " + reason + " #####");
+                        System.out.println(
+                                "##### [UserManagement] User registration rejected: " + registration.getEmail() +
+                                        " by " + rejectedBy + " reason: " + reason + " #####");
                     });
 
         } catch (Exception e) {
-            System.err.println("##### Error processing user rejection: " + e.getMessage() + " #####");
+            System.err.println("##### [UserManagement] Error processing user rejection: " + e.getMessage() + " #####");
             e.printStackTrace();
         }
     }
-
-
 }

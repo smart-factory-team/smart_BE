@@ -226,9 +226,8 @@ spring:
           destination: carsmartfactory
           contentType: application/json
 
-# 서버 포트 (Docker 내부)
 server:
-  port: 8080
+  port: 8090  # 8087 → 8090 변경 (Gateway와 포트 충돌 해결)
 
 # 로깅 설정 (프로덕션)
 logging:
@@ -304,7 +303,7 @@ spring:
 
 # 서버 설정
 server:
-  port: 8080
+  port: 8090
 
 # 로깅 설정 (프로덕션)
 logging:

@@ -36,7 +36,7 @@ spring:
         - id: approvalmanagement
           uri: http://localhost:8084
           predicates:
-            - Path=/userApprovals/**
+            - Path=/userApprovals/**, /api/approvals/**
         - id: pressfaultdetection
           uri: http://localhost:8085
           predicates:
@@ -50,7 +50,7 @@ spring:
           predicates:
             - Path=/paintingSurfaceDefectDetectionLogs/**, /paintingProcessEquipmentDefectDetectionLogs/**
         - id: assemblyprocessmonitoring
-          uri: http://localhost:8090
+          uri: http://localhost:8090  # 8088 → 8090 변경 (포트 충돌 해결)
           predicates:
             - Path=/vehicleAssemblyProcessDefectDetectionLogs/**
         - id: weldingprocessmonitoring
@@ -61,13 +61,6 @@ spring:
           uri: http://localhost:8080
           predicates:
             - Path=/**
-      globalcors:
-        corsConfigurations:
-          '[/**]':
-            allowedOrigins: [ "*" ]
-            allowedMethods: [ "*" ]
-            allowedHeaders: [ "*" ]
-            allowCredentials: false
 
 ---
 
@@ -93,7 +86,7 @@ spring:
         - id: approvalmanagement
           uri: http://approvalmanagement:8080
           predicates:
-            - Path=/userApprovals/**
+            - Path=/userApprovals/**, /api/approvals/**
         - id: pressfaultdetection
           uri: http://pressfaultdetection:8080
           predicates:
@@ -118,13 +111,6 @@ spring:
           uri: http://frontend:8080
           predicates:
             - Path=/**
-      globalcors:
-        corsConfigurations:
-          '[/**]':
-            allowedOrigins: [ "*" ]
-            allowedMethods: [ "*" ]
-            allowedHeaders: [ "*" ]
-            allowCredentials: false
 
 ---
 
@@ -154,7 +140,7 @@ spring:
         - id: approvalmanagement
           uri: http://approvalmanagement.smart-be.svc.cluster.local:8080
           predicates:
-            - Path=/userApprovals/**
+            - Path=/userApprovals/**, /api/approvals/**
         - id: pressfaultdetection
           uri: http://pressfaultdetection.smart-be.svc.cluster.local:8080
           predicates:
@@ -286,10 +272,3 @@ spring:
           uri: http://frontend:8080
           predicates:
             - Path=/**
-      globalcors:
-        corsConfigurations:
-          '[/**]':
-            allowedOrigins: [ "*" ]
-            allowedMethods: [ "*" ]
-            allowedHeaders: [ "*" ]
-            allowCredentials: false
