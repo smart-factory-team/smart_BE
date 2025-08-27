@@ -94,5 +94,28 @@ public class ReportController {
             return ResponseEntity.internalServerError().build();
         }
     }
+
+    @DeleteMapping("/post/{postId}")
+    public ResponseEntity<Void> deleteReportByPostId(@PathVariable String postId) {
+        List<Report> reports = reportRepository.findByPostId(postId);
+        if (reports.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        try {
+            for (Report report : reports) {
+                String fileName = report.getReportUrl().replace("/reports/", "");
+                Path filePath = Paths.get(UPLOAD_PATH).resolve(fileName).normalize();
+                Files.deleteIfExists(filePath);
+            }
+            
+            reportRepository.deleteAll(reports);
+            
+            return ResponseEntity.noContent().build(); // 204 No Content
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().build();
+        }
+    }
 }
 //>>> Clean Arch / Inbound Adaptor
