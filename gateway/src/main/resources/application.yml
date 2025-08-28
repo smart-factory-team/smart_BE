@@ -71,8 +71,8 @@ spring:
           uri: ws://localhost:8091
           predicates:
             - Path=/ws/monitoring-data/**
-        - id: pressdefectdetection  # 기존과 동일한 이름
-          uri: http://localhost:8092  # 8085 → 8092로 변경
+        - id: pressdefectdetection
+          uri: http://localhost:8092
           predicates:
             - Path=/api/press-defect/**, /ws/monitoring
         - id: pressdefectdetection-ws

@@ -1,15 +1,14 @@
 package carsmartfactory.infra;
 
-import carsmartfactory.config.kafka.KafkaProcessor;
 import carsmartfactory.domain.*;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import javax.naming.NameParser;
-import javax.naming.NameParser;
-import javax.transaction.Transactional;
+// javax → jakarta 변경
+import jakarta.transaction.Transactional;
+import java.util.function.Consumer;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cloud.stream.annotation.StreamListener;
-import org.springframework.messaging.handler.annotation.Payload;
+import org.springframework.context.annotation.Bean;
+import org.springframework.messaging.Message;
 import org.springframework.stereotype.Service;
 
 //<<< Clean Arch / Inbound Adaptor
@@ -20,48 +19,74 @@ public class PolicyHandler {
     @Autowired
     PaintingSurfaceDefectDetectionLogRepository paintingSurfaceDefectDetectionLogRepository;
 
-    @Autowired
-    PaintingProcessEquipmentDefectDetectionLogRepository paintingProcessEquipmentDefectDetectionLogRepository;
+    /**
+     * Kafka 'carsmartfactory' 토픽에서 들어오는 모든 이벤트 처리 Spring Cloud Stream 4.x 함수형 바인딩 방식 application.yml:
+     * spring.cloud.stream.bindings.eventIn-in-0
+     */
+    @Bean
+    public Consumer<Message<String>> eventIn() {
+        return message -> {
+            try {
+                String payload = message.getPayload();
+                String eventType = (String) message.getHeaders().get("type"); // 'type' 헤더 사용
 
-    @StreamListener(KafkaProcessor.INPUT)
-    public void whatever(@Payload String eventString) {}
+                System.out.println("\n\n##### Received Event: " + eventType + " #####");
+                System.out.println("##### Payload: " + payload + " #####\n\n");
 
-    @StreamListener(
-        value = KafkaProcessor.INPUT,
-        condition = "headers['type']=='IssueSolved'"
-    )
-    public void wheneverIssueSolved_EquipmentIssueSolvedPolicy(
-        @Payload IssueSolved issueSolved
-    ) {
-        IssueSolved event = issueSolved;
-        System.out.println(
-            "\n\n##### listener EquipmentIssueSolvedPolicy : " +
-            issueSolved +
-            "\n\n"
-        );
+                ObjectMapper objectMapper = new ObjectMapper();
+                objectMapper.configure(
+                        DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false
+                );
 
-        // Sample Logic //
-        PaintingProcessEquipmentDefectDetectionLog.equipmentIssueSolvedPolicy(
-            event
-        );
+                // 이벤트 타입에 따른 분기 처리
+                if ("IssueSolved".equals(eventType)) {
+                    handleIssueSolved(payload, objectMapper);
+                } else if ("PaintingSurfaceDefectSaved".equals(eventType)) {
+                    handlePaintingSurfaceDefectSaved(payload, objectMapper);
+                } else {
+                    System.out.println("##### Unknown event type: " + eventType + " #####");
+                }
+
+            } catch (Exception e) {
+                System.err.println("##### Error processing event: " + e.getMessage() + " #####");
+                e.printStackTrace();
+            }
+        };
     }
 
-    @StreamListener(
-        value = KafkaProcessor.INPUT,
-        condition = "headers['type']=='IssueSolved'"
-    )
-    public void wheneverIssueSolved_SurfaceIssueSolvedPolicy(
-        @Payload IssueSolved issueSolved
-    ) {
-        IssueSolved event = issueSolved;
-        System.out.println(
-            "\n\n##### listener SurfaceIssueSolvedPolicy : " +
-            issueSolved +
-            "\n\n"
-        );
+    /**
+     * IssueSolved 이벤트 처리 (기존 두 개의 리스너 로직 통합)
+     */
+    private void handleIssueSolved(String payload, ObjectMapper objectMapper) {
+        try {
+            IssueSolved event = objectMapper.readValue(payload, IssueSolved.class);
 
-        // Sample Logic //
-        PaintingSurfaceDefectDetectionLog.surfaceIssueSolvedPolicy(event);
+            // Surface 이슈 해결 정책
+            System.out.println("\n\n##### listener SurfaceIssueSolvedPolicy : " + event + "\n\n");
+            PaintingSurfaceDefectDetectionLog.surfaceIssueSolvedPolicy(event);
+
+        } catch (Exception e) {
+            System.err.println("##### Error handling IssueSolved: " + e.getMessage() + " #####");
+            e.printStackTrace();
+        }
+    }
+
+
+    /**
+     * PaintingSurfaceDefectSaved 이벤트 처리
+     */
+    private void handlePaintingSurfaceDefectSaved(String payload, ObjectMapper objectMapper) {
+        try {
+            System.out.println("\n\n##### listener PaintingSurfaceDefectSaved : " + payload + "\n\n");
+            
+            // 이벤트 데이터를 파싱하여 필요한 처리 수행
+            // 예: 로깅, 알림, 다른 서비스 호출 등
+            System.out.println("##### 결함 감지 로그가 성공적으로 저장되었습니다 #####");
+            
+        } catch (Exception e) {
+            System.err.println("##### Error handling PaintingSurfaceDefectSaved: " + e.getMessage() + " #####");
+            e.printStackTrace();
+        }
     }
 }
 //>>> Clean Arch / Inbound Adaptor

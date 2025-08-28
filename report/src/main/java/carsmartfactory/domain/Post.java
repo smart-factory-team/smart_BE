@@ -10,7 +10,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import javax.persistence.*;
+import jakarta.persistence.*;
 import lombok.Data;
 
 @Entity
@@ -20,6 +20,7 @@ import lombok.Data;
 public class Post {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
     private String userId;
@@ -32,11 +33,12 @@ public class Post {
 
     private Date createdAt;
 
-    private Date updatedAt;
+    // private Date updatedAt;
 
-    private String issue;
+    // private String issue;
 
-    private Boolean isSolved;
+    @Column(columnDefinition = "boolean default false")
+    private Boolean isSolved = false;
 
     @PostPersist
     public void onPostPersist() {
