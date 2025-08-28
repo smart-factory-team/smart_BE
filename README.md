@@ -30,6 +30,21 @@
 ### 통합 관리 서비스
 - **report**: 리포트 생성 및 게시판 관리
 
+
+## 팀원별 담당 서비스
+
+| 팀원 | 담당 서비스 | 포트 | 설명 |
+|------|-------------|------|------|
+| 한다현 | usermanagement | 8082 | 사용자 관리 및 인증 |
+| 배소연 | report | 8083 | 리포트 생성 및 게시판 관리 |
+| 한다현 | approvalmanagement | 8084 | 사용자 승인 관리 및 권한 제어 |
+| 김해연<br>배소연 | pressfaultdetection | 8085 | 프레스 장비 고장 예측 및 감지 |
+| 이원욱 | paintingprocessmonitoring | 8087 | 도장 공정 표면 결함 감지 |
+| 한다현 | weldingprocessmonitoring | 8089 | 용접 공정 실시간 모니터링 및 결함 감지 |
+| 권도윤 | assemblyprocessmonitoring | 8090 | 조립 공정 결함 감지 및 모니터링 |
+| 김태현 | paintingequipmentmonitoring | 8091 | 도장 장비 상태 모니터링 |
+
+
 ## 기술 스택
 
 - **Framework**: Spring Boot 2.x
@@ -135,4 +150,9 @@ pip install httpie
 
 ---
 
-**Model**: www.msaez.io/#/117638449/storming/408c7f86f186a69c91693fe51946703a
+## 참고 자료
+
+**MASEZ** : www.msaez.io/#/117638449/storming/408c7f86f186a69c91693fe51946703a
+
+**시연 영상** : https://www.youtube.com/watch?v=3j6kQe2ZbfQ
+
