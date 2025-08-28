@@ -71,6 +71,14 @@ spring:
           uri: ws://localhost:8091
           predicates:
             - Path=/ws/monitoring-data/**
+        - id: pressdefectdetection
+          uri: http://localhost:8092
+          predicates:
+            - Path=/api/press-defect/**, /ws/monitoring
+        - id: pressdefectdetection-ws
+          uri: ws://localhost:8092
+          predicates:
+            - Path=/ws/monitoring
         - id: painting-equipment-simulator-api
           uri: http://localhost:8011
           predicates:
