@@ -1,117 +1,138 @@
-# 
+# 스마트팩토리 백엔드 시스템
 
-## Model
-www.msaez.io/#/117638449/storming/408c7f86f186a69c91693fe51946703a
+자동차 제조 공정의 스마트팩토리 모니터링 및 관리를 위한 마이크로서비스 기반 백엔드 시스템입니다.
 
-## Before Running Services
-### Make sure there is a Kafka server running
-```
-cd kafka
-docker-compose up
-```
-- Check the Kafka messages:
-```
+## 시스템 아키텍처
+
+- **마이크로서비스 아키텍처**: Spring Boot 기반의 독립적인 서비스들
+- **이벤트 드리븐**: Apache Kafka를 통한 비동기 메시징 시스템
+- **API Gateway**: Spring Cloud Gateway를 통한 단일 진입점
+- **데이터베이스**: PostgreSQL 기반 다중 데이터베이스 구성
+- **컨테이너화**: Docker & Kubernetes 기반 배포
+
+## 서비스 구성
+
+### 인증 및 보안 서비스
+- **usermanagement**: 사용자 관리 및 인증
+- **approvalmanagement**: 사용자 승인 관리 및 권한 제어
+- **gateway**: API 게이트웨이 및 라우팅
+
+### 핵심 AI 서비스
+- **chatbot**: AI 기반 챗봇 및 이슈 관리 시스템
+
+### 스마트 모니터링 서비스
+- **weldingprocessmonitoring**: 용접 공정 실시간 모니터링 및 결함 감지
+- **paintingprocessmonitoring**: 도장 공정 표면 결함 감지
+- **paintingequipmentmonitoring**: 도장 장비 상태 모니터링
+- **assemblyprocessmonitoring**: 조립 공정 결함 감지 및 모니터링
+- **pressfaultdetection**: 프레스 장비 고장 예측 및 감지
+
+### 통합 관리 서비스
+- **report**: 리포트 생성 및 게시판 관리
+
+## 기술 스택
+
+- **Framework**: Spring Boot 2.x
+- **Message Queue**: Apache Kafka
+- **Database**: PostgreSQL
+- **Container**: Docker
+- **Orchestration**: Kubernetes
+- **AI/ML**: 외부 예측 모델 연동 (RESTful API)
+- **Real-time Communication**: WebSocket
+
+## 실행 환경 구성
+
+### 1. Kafka 서버 실행
+```bash
 cd infra
-docker-compose exec -it kafka /bin/bash
-cd /bin
-./kafka-console-consumer --bootstrap-server localhost:9092 --topic
+docker-compose up -d
 ```
 
-## Run the backend micro-services
-See the README.md files inside the each microservices directory:
+### 2. 마이크로서비스 실행
+각 서비스별 개별 실행:
+```bash
+# 예: 사용자 관리 서비스
+cd usermanagement
+mvn spring-boot:run
 
-- usermanagement
-- report
-- approvalmanagement
-- pressfaultdetection
-- chatbot
-- paintingprocessmonitoring
-- assemblyprocessmonitoring
-- weldingprocessmonitoring
-
-
-## Run API Gateway (Spring Gateway)
+# 다른 서비스들도 동일하게 실행
+cd ../approvalmanagement && mvn spring-boot:run
+cd ../chatbot && mvn spring-boot:run
+# ... (각 서비스별 실행)
 ```
+
+### 3. API Gateway 실행
+```bash
 cd gateway
 mvn spring-boot:run
 ```
 
-## Test by API
-- usermanagement
-```
- http :8088/userRegisterations id="id"name="name"email="email"password="password"department="department"createdAt="createdAt"
- http :8088/users id="id"email="email"password="password"name="name"department="department"isApproved="isApproved"createdAt="createdAt"updatedAt="updatedAt"
-```
-- report
-```
- http :8088/posts id="id"userId="userId"title="title"content="content"createdAt="createdAt"updatedAt="updatedAt"issue="issue"isSolved="isSolved"
- http :8088/comments id="id"postId="postId"userId="userId"parentId="parentId"content="content"createdAt="createdAt"updatedAt="updatedAt"isDeleted="isDeleted"
- http :8088/reports id="id"postId="postId"reportUrl="reportUrl"
-```
-- approvalmanagement
-```
- http :8088/userApprovals id="id"name="name"email="email"password="password"department="department"createdAt="createdAt"
-```
-- pressfaultdetection
-```
- http :8088/pressDefectDetectionLogs id="id"machineId="machineId"timeStamp="timeStamp"machineName="machineName"itemNo="itemNo"pressTime="pressTime"pressure1="pressure1"pressure2="pressure2"pressure3="pressure3"defectCluster="defectCluster"defectType="defectType"issue="issue"isSolved="isSolved"
- http :8088/pressFaultDetectionLogs id="id"machineId="machineId"timeStamp="timeStamp"ai0Vibration="ai0Vibration"ai1Vibration="ai1Vibration"ai2Current="ai2Current"issue="issue"isSolved="isSolved"
-```
-- chatbot
-```
- http :8088/agentSessions chatbotSessionId="chatbotSessionId"issue="issue"userId="userId"startedAt="startedAt"endedAt="endedAt"isReported="isReported"isTerminated="isTerminated"
- http :8088/issues issue="issue"modelLogId="modelLogId"
-```
-- paintingprocessmonitoring
-```
- http :8088/paintingSurfaceDefectDetectionLogs id="id"machineId="machineId"timeStamp="timeStamp"machineName="machineName"itemNo="itemNo"pressTime="pressTime"pressure1="pressure1"pressure2="pressure2"pressure3="pressure3"defectCluster="defectCluster"defectType="defectType"issue="issue"isSolved="isSolved"
- http :8088/paintingProcessEquipmentDefectDetectionLogs id="id"machineId="machineId"timeStamp="timeStamp"thick="thick"voltage="voltage"ampere="ampere"temper="temper"issue="issue"isSolved="isSolved"
-```
-- assemblyprocessmonitoring
-```
- http :8088/vehicleAssemblyProcessDefectDetectionLogs id="id"machineId="machineId"timeStamp="timeStamp"part="part"work="work"category="category"imageUrl="imageUrl"imageName="imageName"imageWidth="imageWidth"imageHeight="imageHeight"issue="issue"isSolved="isSolved"
-```
-- weldingprocessmonitoring
-```
- http :8088/weldingMachineDefectDetectionLogs id="id"machineId="machineId"timeStamp="timeStamp"sensorValue0Ms="sensorValue0ms"sensorValue312Ms="sensorValue3.12ms"sensorValue625Ms="sensorValue6.25ms"sensorValue938Ms="sensorValue9.38ms"sensorValue125Ms="sensorValue12.5ms"sensorValue1562Ms="sensorValue15.62ms"sensorValue1875Ms="sensorValue18.75ms"sensorValue2188Ms="sensorValue21.88ms"sensorValue25Ms="sensorValue25ms"sensorValue2812Ms="sensorValue28.12ms"sensorValue3125Ms="sensorValue31.25ms"sensorValue3438Ms="sensorValue34.38ms"sensorValue375Ms="sensorValue37.5ms"sensorValue4062Ms="sensorValue40.62ms"issue="issue"isSolved="isSolved"
+## 주요 기능
+
+- **실시간 공정 모니터링**: WebSocket을 통한 실시간 데이터 스트리밍
+- **AI 기반 예측 분석**: 머신러닝 모델을 활용한 결함 예측 및 감지
+- **이벤트 드리븐 아키텍처**: Kafka 기반 비동기 이벤트 처리
+- **사용자 승인 워크플로**: 다단계 사용자 승인 프로세스
+- **통합 리포팅**: 각 공정별 리포트 생성 및 관리
+
+## API 테스트
+
+### 사용자 관리
+```bash
+# 사용자 등록
+http :8088/userRegisterations name="홍길동" email="hong@example.com" password="password123" department="제조부"
+
+# 사용자 조회
+http :8088/users/1
 ```
 
+### 모니터링 서비스
+```bash
+# 용접 공정 로그 조회
+http :8088/weldingMachineDefectDetectionLogs
 
-## Run the frontend
+# 도장 공정 결함 로그
+http :8088/paintingSurfaceDefectDetectionLogs
+
+# 프레스 결함 예측
+http :8088/pressDefectDetectionLogs
 ```
-cd frontend
-npm i
-npm run serve
+
+## 모니터링
+
+### Kafka 메시지 확인
+```bash
+cd infra
+docker-compose exec kafka /bin/bash
+cd /bin
+./kafka-console-consumer --bootstrap-server localhost:9092 --topic [토픽명]
 ```
 
-## Test by UI
-Open a browser to localhost:8088
+## 개발 환경 구성
 
-## Required Utilities
+### 필수 도구
+- JDK 11+
+- Maven 3.6+
+- Docker & Docker Compose
+- kubectl (Kubernetes 배포 시)
 
-- httpie (alternative for curl / POSTMAN) and network utils
-```
-sudo apt-get update
-sudo apt-get install net-tools
-sudo apt install iputils-ping
+### 권장 도구
+- HTTPie (API 테스트용)
+```bash
 pip install httpie
 ```
 
-- kubernetes utilities (kubectl)
-```
-curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
-```
+## 시스템 모니터링 대시보드
 
-- aws cli (aws)
-```
-curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-unzip awscliv2.zip
-sudo ./aws/install
-```
+각 공정별 실시간 모니터링을 위한 WebSocket 연결:
+- 용접 모니터링: `ws://localhost:8088/welding/monitoring`
+- 도장 모니터링: `ws://localhost:8088/painting/monitoring`
+- 조립 모니터링: `ws://localhost:8088/assembly/monitoring`
 
-- eksctl 
-```
-curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp
-sudo mv /tmp/eksctl /usr/local/bin
-```
+## 모델 서버 연동
+
+외부 AI 예측 모델과의 연동을 위한 RESTful API 클라이언트가 각 모니터링 서비스에 포함되어 있습니다.
+
+---
+
+**Model**: www.msaez.io/#/117638449/storming/408c7f86f186a69c91693fe51946703a
