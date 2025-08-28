@@ -44,7 +44,7 @@
 
 ## ⚙️ 기술 스택
 
-- **Framework**: Spring Boot 3.x
+- **Framework**: Spring Boot 3.2.8
 - **Message Queue**: Apache Kafka
 - **Database**: PostgreSQL
 - **Container**: Docker
